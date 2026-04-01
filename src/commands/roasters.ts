@@ -1,6 +1,7 @@
 import { defineCommand } from 'citty';
 import { createSupabaseClient } from '../client.ts';
 import { resolveConfig } from '../config.ts';
+import { createCommandLogger } from '../logger.ts';
 import { executeGetAllRoasters } from '../tools/getAllRoasters.ts';
 
 function exitWithError(message: string, code: number) {
@@ -29,6 +30,7 @@ export default defineCommand({
     format: { type: 'string' },
   },
   async run({ args }) {
+    const logger = createCommandLogger(['roasters'], args as Record<string, unknown>);
     try {
       const config = await resolveConfig();
       const supabase = createSupabaseClient(config);
@@ -36,24 +38,29 @@ export default defineCommand({
       const text = result.content[0]?.text ?? '';
 
       if (/^Failed to get roasters:/i.test(text)) {
+        await logger.error(text);
         exitWithError(`Error: Network ${text}`, 65);
       }
 
       const roasters = parseRoasters(text);
       if (roasters.length === 0) {
         console.log('No roasters found. Add beans with --roaster to see them here.');
+        await logger.success();
         return;
       }
 
       if (args.format === 'json') {
         console.log(JSON.stringify(roasters));
+        await logger.success();
         return;
       }
 
       for (const roaster of roasters) {
         console.log(roaster);
       }
+      await logger.success();
     } catch (error) {
+      await logger.error(error);
       const message = error instanceof Error ? error.message : String(error);
       if (/Missing|Config error/i.test(message)) {
         exitWithError(`Error: Config ${message}`, 64);

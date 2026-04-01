@@ -121,6 +121,10 @@ test('resolveConfig throws when no credentials are available', async (t) => {
 
 test('resolveConfig warns when config file permissions are too broad', async (t) => {
   await withSandbox(t, async ({ configPath }) => {
+    delete process.env.BREW_GUIDE_SUPABASE_URL;
+    delete process.env.BREW_GUIDE_SUPABASE_SERVICE_ROLE_KEY;
+    delete process.env.BREW_GUIDE_USER_ID;
+
     await fs.writeFile(
       configPath,
       JSON.stringify({

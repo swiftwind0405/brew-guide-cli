@@ -109,6 +109,9 @@ npm run dev -- bean list
 # 类型检查与打包
 npm run typecheck
 npm run build
+
+# 监听源码变更并自动重新构建 dist/
+npm run build:watch
 ```
 
 ### 在 OpenClaw 中本地测试

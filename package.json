@@ -38,6 +38,7 @@
   },
   "scripts": {
     "build": "tsup",
+    "build:watch": "tsup --watch --onSuccess \"chmod +x dist/main.js\"",
     "postbuild": "chmod +x dist/main.js",
     "dev": "tsx src/main.ts",
     "test": "npx tsc && node --import tsx --test",

@@ -1,6 +1,7 @@
 import { defineCommand } from 'citty';
 import { createSupabaseClient } from '../../client.ts';
 import { resolveConfig } from '../../config.ts';
+import { createCommandLogger } from '../../logger.ts';
 import { executeListRecent } from '../../tools/listRecent.ts';
 
 function exitWithError(message: string, code: number) {
@@ -32,8 +33,10 @@ export default defineCommand({
     format: { type: 'string' },
   },
   async run({ args }) {
+    const logger = createCommandLogger(['note', 'list'], args as Record<string, unknown>);
     const limit = Number.parseInt(String(args.limit), 10);
     if (Number.isNaN(limit) || limit <= 0) {
+      await logger.error('Error: --limit must be a positive integer');
       exitWithError('Error: --limit must be a positive integer', 2);
     }
 
@@ -44,22 +47,27 @@ export default defineCommand({
       const text = result.content[0]?.text ?? '';
 
       if (/^Failed to list records:/i.test(text)) {
+        await logger.error(text);
         exitWithError(`Error: Network ${text}`, 65);
       }
 
       if (/^No records found in brewing_notes\./i.test(text)) {
         console.log("No notes found. Use 'brew-guide note add' to create one.");
+        await logger.success();
         return;
       }
 
       const records = JSON.parse(text);
       if (args.format === 'json') {
         console.log(JSON.stringify(records));
+        await logger.success();
         return;
       }
 
       printHumanRecords(records);
+      await logger.success();
     } catch (error) {
+      await logger.error(error);
       const message = error instanceof Error ? error.message : String(error);
       if (/Missing|Config error/i.test(message)) {
         exitWithError(`Error: Config ${message}`, 64);

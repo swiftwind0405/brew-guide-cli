@@ -5,7 +5,7 @@ import { isValidTable, VALID_TABLES } from '../lib/tables.ts';
 import { getErrorMessage, invalidParamsResult, isRecord, textResult } from '../lib/toolResults.ts';
 
 const SUMMARY_FIELDS: Record<string, string[]> = {
-  coffee_beans: ['name', 'roaster', 'origin', 'process', 'variety', 'roastLevel'],
+  coffee_beans: ['name', 'roaster', 'origin', 'process', 'variety', 'roastLevel', 'startDay', 'endDay'],
   brewing_notes: ['method', 'beanId', 'score', 'flavor', 'ratio', 'brewTime'],
   custom_equipments: ['brand', 'model', 'name', 'equipmentType', 'category'],
   custom_methods: ['name', 'title', 'category', 'description', 'method'],

@@ -1,6 +1,7 @@
 import { defineCommand } from 'citty';
 import { createSupabaseClient } from '../../client.ts';
 import { resolveConfig } from '../../config.ts';
+import { createCommandLogger } from '../../logger.ts';
 import { executeUpsertNote } from '../../tools/upsertNote.ts';
 
 function buildNoteData(args: Record<string, string | boolean | undefined>) {
@@ -62,6 +63,7 @@ export default defineCommand({
     format: { type: 'string' },
   },
   async run({ args }) {
+    const logger = createCommandLogger(['note', 'add'], args as Record<string, unknown>);
     const noteData = buildNoteData(args as Record<string, string | boolean | undefined>);
     const dryRun = args['dry-run'] === true;
     const jsonFormat = args.format === 'json';
@@ -69,10 +71,12 @@ export default defineCommand({
     if (dryRun) {
       if (jsonFormat) {
         console.log(JSON.stringify({ dryRun: true, note: noteData }));
+        await logger.success();
         return;
       }
 
       console.log(`[dry-run] Would create note:\n${JSON.stringify(noteData, null, 2)}`);
+      await logger.success();
       return;
     }
 
@@ -83,27 +87,33 @@ export default defineCommand({
       const text = result.content[0]?.text ?? '';
 
       if (/64 KB/i.test(text)) {
+        await logger.error(text);
         exitWithError(text, 1);
       }
 
       if (/^Failed to upsert note:/i.test(text)) {
+        await logger.error(text);
         exitWithError(`Error: ${text}`, 65);
       }
 
       const match = text.match(/brewing note (note_[^\s]+) at ([^\.\n]+)/i);
       if (!match) {
         console.log(text);
+        await logger.success();
         return;
       }
 
       const [, id, timestamp] = match;
       if (jsonFormat) {
         console.log(JSON.stringify({ id, status: 'created', timestamp }));
+        await logger.success();
         return;
       }
 
       console.log(`Created note ${id}`);
+      await logger.success();
     } catch (error) {
+      await logger.error(error);
       const message = error instanceof Error ? error.message : String(error);
       if (/Missing|Config error/i.test(message)) {
         exitWithError(`Error: Config ${message}`, 64);

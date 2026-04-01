@@ -54,6 +54,8 @@ Parse the packaging and extract all visible information:
 - Altitude
 - Capacity / weight
 - Roast date
+- Resting window start day
+- Resting window end day
 - Price
 - Flavor notes
 - Brewing suggestions
@@ -95,7 +97,7 @@ Show the extracted fields clearly:
 Keep the user in control:
 
 ```text
-[目前缺少：烘焙日期、烘焙程度、价格、豆子类型]
+[目前缺少：烘焙日期、养豆起始天数、养豆结束天数、烘焙程度、价格、豆子类型]
 
 请选择：
 1. 补充某个字段
@@ -117,6 +119,7 @@ brew-guide bean add \
   --roaster "Finish Line Coffee" \
   --origin "秘鲁 卡哈马卡大区" \
   --process "水洗" \
+  --estate "VISTA ALEGRE" \
   --variety "SL-09" \
   --roast-level "浅度烘焙" \
   --roast-date "2026-03-20" \
@@ -124,6 +127,8 @@ brew-guide bean add \
   --capacity "150G" \
   --bean-type "filter" \
   --flavor "清晰花香,橙子,水果茶,柑橘酸质" \
+  --start-day 30 \
+  --end-day 60 \
   --notes "庄园：VISTA ALEGRE，海拔：1920M" \
   --dry-run
 ```
@@ -140,6 +145,7 @@ brew-guide bean add \
   --roaster "Finish Line Coffee" \
   --origin "秘鲁 卡哈马卡大区" \
   --process "水洗" \
+  --estate "VISTA ALEGRE" \
   --variety "SL-09" \
   --roast-level "浅度烘焙" \
   --roast-date "2026-03-20" \
@@ -147,6 +153,8 @@ brew-guide bean add \
   --capacity "150G" \
   --bean-type "filter" \
   --flavor "清晰花香,橙子,水果茶,柑橘酸质" \
+  --start-day 30 \
+  --end-day 60 \
   --notes "庄园：VISTA ALEGRE，海拔：1920M"
 ```
 
@@ -158,9 +166,12 @@ brew-guide bean add \
   "origin": "string",
   "roaster": "string",
   "process": "string",
+  "estate": "string (written into blendComponents[].estate)",
   "variety": "string",
   "roastLevel": "string",
   "roastDate": "string (ISO date)",
+  "startDay": "number",
+  "endDay": "number",
   "price": "string",
   "capacity": "string",
   "beanType": "string",
@@ -172,9 +183,13 @@ brew-guide bean add \
 ## Field Extraction Rules
 
 - Always extract `capacity` when shown as weight or package size
+- Always normalize `capacity` and `remaining` to numeric strings without units before writing, such as `100` instead of `100G`
+- Always write estate/farm into `blendComponents[].estate` when available
 - Always split flavor notes into an array before writing
+- Always store `startDay` and `endDay` as numbers
+- Default resting window to `30` and `60` when the user does not provide values
 - Always normalize the roaster via `brew-guide roasters --format json` before final write
-- Put extra packaging details such as estate, altitude, lot, or region into `notes` if there is no dedicated CLI flag
+- Put extra packaging details such as altitude, lot, or region into `notes` if there is no dedicated CLI flag
 
 ## Bean Anti-Patterns
 

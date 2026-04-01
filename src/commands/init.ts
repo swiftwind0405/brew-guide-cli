@@ -3,6 +3,7 @@ import path from 'node:path';
 import { createInterface } from 'node:readline';
 import { stdin as input, stdout as output } from 'node:process';
 import { defineCommand } from 'citty';
+import { createCommandLogger } from '../logger.ts';
 import { getConfigPath } from '../paths.ts';
 
 function createPrompter() {
@@ -111,7 +112,15 @@ export default defineCommand({
     name: 'init',
     description: 'Initialize brew-guide CLI config.',
   },
-  async run() {
-    await promptForConfig();
+  async run({ args }) {
+    const logger = createCommandLogger(['init'], args as Record<string, unknown>);
+
+    try {
+      await promptForConfig();
+      await logger.success();
+    } catch (error) {
+      await logger.error(error);
+      throw error;
+    }
   },
 });

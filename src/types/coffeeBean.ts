@@ -33,8 +33,8 @@ export interface CoffeeBean {
   notes?: string; // 备注
 
   // 时间管理
-  startDay?: number; // 开始使用天数
-  endDay?: number; // 结束使用天数
+  startDay?: number; // 开始使用天数（数字）
+  endDay?: number; // 结束使用天数（数字）
   isFrozen?: boolean; // 是否冷冻
   isInTransit?: boolean; // 是否在途
 
