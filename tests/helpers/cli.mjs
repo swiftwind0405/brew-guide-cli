@@ -1,7 +1,7 @@
 import { spawn, spawnSync } from 'node:child_process';
 
 export function spawnCli(args, options = {}) {
-  const child = spawn(process.execPath, ['src/main.ts', ...args], {
+  const child = spawn(process.execPath, ['--import', 'tsx', 'src/main.ts', ...args], {
     cwd: options.cwd,
     env: { ...process.env, ...(options.env ?? {}) },
     stdio: 'pipe',
@@ -42,7 +42,7 @@ export async function runInteractiveCli(args, options = {}) {
 }
 
 export function runCliSync(args, options = {}) {
-  return spawnSync(process.execPath, ['src/main.ts', ...args], {
+  return spawnSync(process.execPath, ['--import', 'tsx', 'src/main.ts', ...args], {
     cwd: options.cwd,
     env: { ...process.env, ...(options.env ?? {}) },
     encoding: 'utf8',

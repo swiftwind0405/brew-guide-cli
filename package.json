@@ -36,7 +36,7 @@
     "build": "tsup",
     "postbuild": "chmod +x dist/main.js",
     "dev": "tsx src/main.ts",
-    "test": "npx tsc && node --test",
+    "test": "npx tsc && node --import tsx --test",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run typecheck && npm run build"
   }
