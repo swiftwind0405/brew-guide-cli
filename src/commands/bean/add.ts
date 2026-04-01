@@ -69,7 +69,7 @@ export default defineCommand({
     format: { type: 'string' },
   },
   async run({ args }) {
-    const beanData = buildBeanData(args);
+    const beanData = buildBeanData(args as Record<string, string | boolean | undefined>);
     const dryRun = args['dry-run'] === true;
     const jsonFormat = args.format === 'json';
 

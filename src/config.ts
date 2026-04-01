@@ -15,13 +15,13 @@ function getConfigError(message: string) {
 export async function resolveConfig(): Promise<BrewGuideConfig> {
   const customConfigPath = process.env.BREW_GUIDE_CONFIG_PATH;
 
-  const { config, configFile } = await loadConfig({
+  const { config, configFile } = await loadConfig<BrewGuideConfig>({
     name: 'brew-guide',
     globalRc: !customConfigPath,
     dotenv: true,
     defaults: {
       brewGuideUserId: 'default_user',
-    },
+    } as BrewGuideConfig,
     ...(customConfigPath ? { configFile: customConfigPath } : {}),
   });
 

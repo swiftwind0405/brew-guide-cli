@@ -62,7 +62,7 @@ export default defineCommand({
     format: { type: 'string' },
   },
   async run({ args }) {
-    const noteData = buildNoteData(args);
+    const noteData = buildNoteData(args as Record<string, string | boolean | undefined>);
     const dryRun = args['dry-run'] === true;
     const jsonFormat = args.format === 'json';
 
