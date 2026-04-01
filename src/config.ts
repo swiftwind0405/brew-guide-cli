@@ -13,16 +13,15 @@ function getConfigError(message: string) {
 }
 
 export async function resolveConfig(): Promise<BrewGuideConfig> {
-  const customConfigPath = process.env.BREW_GUIDE_CONFIG_PATH;
+  const configPath = getConfigPath();
 
   const { config, configFile } = await loadConfig<BrewGuideConfig>({
-    name: 'brew-guide',
-    globalRc: !customConfigPath,
+    configFile: configPath,
+    rcFile: false,
     dotenv: true,
     defaults: {
       brewGuideUserId: 'default_user',
     } as BrewGuideConfig,
-    ...(customConfigPath ? { configFile: customConfigPath } : {}),
   });
 
   const supabaseUrl = process.env.BREW_GUIDE_SUPABASE_URL ?? config.supabaseUrl;
