@@ -1,0 +1,43 @@
+{
+  "name": "brew-guide-cli",
+  "version": "0.1.4",
+  "type": "module",
+  "description": "Standalone Citty CLI for operating brew-guide data in Supabase.",
+  "author": "Stanley",
+  "license": "MIT",
+  "keywords": [
+    "cli",
+    "brew-guide",
+    "supabase",
+    "coffee"
+  ],
+  "files": [
+    "dist/",
+    "skills/"
+  ],
+  "bin": {
+    "brew-guide": "./dist/main.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@sinclair/typebox": "^0.34.0",
+    "@supabase/supabase-js": "^2.50.0",
+    "c12": "^2.0.0",
+    "citty": "^0.1.6"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.8.0"
+  },
+  "scripts": {
+    "build": "tsup",
+    "postbuild": "chmod +x dist/main.js",
+    "dev": "tsx src/main.ts",
+    "test": "npx tsc && node --test",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run typecheck && npm run build"
+  }
+}

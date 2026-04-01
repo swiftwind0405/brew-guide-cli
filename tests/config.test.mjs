@@ -1,0 +1,156 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import test from 'node:test';
+
+import { resolveConfig } from '../src/config.ts';
+
+const originalEnv = { ...process.env };
+const originalCwd = process.cwd();
+
+async function withSandbox(t, setup) {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'brew-guide-config-'));
+  const homeDir = path.join(tempRoot, 'home');
+  const workDir = path.join(tempRoot, 'work');
+  const configDir = path.join(homeDir, '.config', 'brew-guide');
+  const configPath = path.join(configDir, 'config.json');
+
+  await fs.mkdir(configDir, { recursive: true });
+  await fs.mkdir(workDir, { recursive: true });
+
+  t.after(async () => {
+    process.chdir(originalCwd);
+    process.env = { ...originalEnv };
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  });
+
+  process.env = { ...originalEnv, HOME: homeDir };
+  process.chdir(workDir);
+
+  await setup({ tempRoot, homeDir, workDir, configDir, configPath });
+}
+
+test('resolveConfig prefers environment variables over config file values', async (t) => {
+  await withSandbox(t, async ({ configPath }) => {
+    await fs.writeFile(
+      configPath,
+      JSON.stringify({
+        supabaseUrl: 'https://file.supabase.co',
+        supabaseServiceRoleKey: 'file-key',
+        brewGuideUserId: 'file-user',
+      }),
+      'utf8',
+    );
+
+    process.env.BREW_GUIDE_SUPABASE_URL = 'https://env.supabase.co';
+    process.env.BREW_GUIDE_SUPABASE_SERVICE_ROLE_KEY = 'env-key';
+    process.env.BREW_GUIDE_USER_ID = 'env-user';
+
+    const config = await resolveConfig();
+
+    assert.equal(config.supabaseUrl, 'https://env.supabase.co');
+    assert.equal(config.supabaseServiceRoleKey, 'env-key');
+    assert.equal(config.brewGuideUserId, 'env-user');
+  });
+});
+
+test('resolveConfig reads credentials from cwd .env when process env is unset', async (t) => {
+  await withSandbox(t, async ({ workDir }) => {
+    await fs.writeFile(
+      path.join(workDir, '.env'),
+      [
+        'BREW_GUIDE_SUPABASE_URL=https://dotenv.supabase.co',
+        'BREW_GUIDE_SUPABASE_SERVICE_ROLE_KEY=dotenv-key',
+        'BREW_GUIDE_USER_ID=dotenv-user',
+      ].join('\n'),
+      'utf8',
+    );
+
+    delete process.env.BREW_GUIDE_SUPABASE_URL;
+    delete process.env.BREW_GUIDE_SUPABASE_SERVICE_ROLE_KEY;
+    delete process.env.BREW_GUIDE_USER_ID;
+
+    const config = await resolveConfig();
+
+    assert.equal(config.supabaseUrl, 'https://dotenv.supabase.co');
+    assert.equal(config.supabaseServiceRoleKey, 'dotenv-key');
+    assert.equal(config.brewGuideUserId, 'dotenv-user');
+  });
+});
+
+test('resolveConfig falls back to ~/.config/brew-guide/config.json', async (t) => {
+  await withSandbox(t, async ({ configPath }) => {
+    await fs.writeFile(
+      configPath,
+      JSON.stringify({
+        supabaseUrl: 'https://file-only.supabase.co',
+        supabaseServiceRoleKey: 'file-only-key',
+        brewGuideUserId: 'file-only-user',
+      }),
+      'utf8',
+    );
+
+    delete process.env.BREW_GUIDE_SUPABASE_URL;
+    delete process.env.BREW_GUIDE_SUPABASE_SERVICE_ROLE_KEY;
+    delete process.env.BREW_GUIDE_USER_ID;
+
+    const config = await resolveConfig();
+
+    assert.equal(config.supabaseUrl, 'https://file-only.supabase.co');
+    assert.equal(config.supabaseServiceRoleKey, 'file-only-key');
+    assert.equal(config.brewGuideUserId, 'file-only-user');
+  });
+});
+
+test('resolveConfig throws when no credentials are available', async (t) => {
+  await withSandbox(t, async () => {
+    delete process.env.BREW_GUIDE_SUPABASE_URL;
+    delete process.env.BREW_GUIDE_SUPABASE_SERVICE_ROLE_KEY;
+    delete process.env.BREW_GUIDE_USER_ID;
+
+    await assert.rejects(
+      () => resolveConfig(),
+      (error) => {
+        assert.match(error.message, /Missing/i);
+        return true;
+      },
+    );
+  });
+});
+
+test('resolveConfig warns when config file permissions are too broad', async (t) => {
+  await withSandbox(t, async ({ configPath }) => {
+    await fs.writeFile(
+      configPath,
+      JSON.stringify({
+        supabaseUrl: 'https://warning.supabase.co',
+        supabaseServiceRoleKey: 'warning-key',
+      }),
+      'utf8',
+    );
+    await fs.chmod(configPath, 0o644);
+
+    const stderr = [];
+    const originalWrite = process.stderr.write.bind(process.stderr);
+    process.stderr.write = ((chunk, encoding, callback) => {
+      stderr.push(String(chunk));
+      if (typeof encoding === 'function') {
+        encoding();
+      } else if (typeof callback === 'function') {
+        callback();
+      }
+      return true;
+    });
+
+    t.after(() => {
+      process.stderr.write = originalWrite;
+    });
+
+    const config = await resolveConfig();
+
+    assert.equal(config.supabaseUrl, 'https://warning.supabase.co');
+    assert.equal(config.supabaseServiceRoleKey, 'warning-key');
+    assert.match(stderr.join(''), /Warning: config file has insecure permissions/i);
+  });
+});
