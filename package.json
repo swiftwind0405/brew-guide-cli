@@ -5,6 +5,10 @@
   "description": "Standalone Citty CLI for operating brew-guide data in Supabase.",
   "author": "Stanley",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/swiftwind0405/brew-guide-cli"
+  },
   "keywords": [
     "cli",
     "brew-guide",
