@@ -10,6 +10,27 @@
 
 - Node.js >= 18
 - 一个已初始化 brew-guide schema 的 Supabase 项目
+- **【必要配置】** 需要在 Supabase 数据库里创建一个函数：`public.get_all_roasters()`，它会从：
+   - `public.coffee_beans.data->>'roaster'`
+   - `public.brewing_notes.data->>'roaster'`
+里取值、过滤空值，并做去重后返回 text 列表
+```sql
+  select distinct trim(both from r.roaster) as "roaster"
+  from (
+    select jsonb_extract_path_text("data", 'roaster') as roaster
+    from "public"."coffee_beans"
+    where "deleted_at" is null
+
+    union all
+
+    select jsonb_extract_path_text("data", 'roaster') as roaster
+    from "public"."brewing_notes"
+    where "deleted_at" is null
+  ) as r
+  where r.roaster is not null
+    and btrim(r.roaster) <> ''
+  order by 1;
+```
 
 ## 安装
 
