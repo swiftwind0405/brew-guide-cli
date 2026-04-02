@@ -32,6 +32,7 @@ export const upsertBeanParameters = Type.Object({
       roastLevel: Type.Optional(Type.String({ description: 'Roast level (e.g. light, medium, dark).' })),
       purchaseDate: Type.Optional(Type.String({ description: 'Purchase date (ISO string).' })),
       roastDate: Type.Optional(Type.String({ description: 'Roast date (ISO string).' })),
+      isInTransit: Type.Optional(Type.Boolean({ description: 'Whether the bean is still in transit.' })),
       startDay: Type.Optional(Type.Number({ description: 'Recommended resting start day as a number.' })),
       endDay: Type.Optional(Type.Number({ description: 'Recommended resting end day as a number.' })),
       notes: Type.Optional(Type.String({ description: 'Free-form notes about this bean.' })),
@@ -81,11 +82,22 @@ export async function executeUpsertBean(
     }
   }
 
+  delete normalizedBean.origin;
+  delete normalizedBean.process;
+  delete normalizedBean.variety;
+  delete normalizedBean.estate;
+
   normalizedBean.capacity = normalizeWeight(normalizedBean.capacity) as CoffeeBean['capacity'];
   normalizedBean.remaining = normalizeWeight(normalizedBean.remaining) as CoffeeBean['remaining'];
 
   if (!normalizedBean.beanType) {
     normalizedBean.beanType = 'filter';
+  }
+  if (!normalizedBean.roastLevel && normalizedBean.beanType === 'filter') {
+    normalizedBean.roastLevel = '浅度烘焙';
+  }
+  if (!normalizedBean.roastLevel && normalizedBean.beanType === 'espresso') {
+    normalizedBean.roastLevel = '中深烘焙';
   }
   if (!normalizedBean.beanState) {
     normalizedBean.beanState = 'roasted';
@@ -110,6 +122,11 @@ export async function executeUpsertBean(
   }
   if (typeof normalizedBean.endDay !== 'number') {
     normalizedBean.endDay = 60;
+  }
+  if (typeof normalizedBean.roastDate === 'string' && normalizedBean.roastDate.trim()) {
+    normalizedBean.isInTransit = false;
+  } else if (typeof normalizedBean.isInTransit !== 'boolean') {
+    normalizedBean.isInTransit = true;
   }
   if (normalizedBean.remaining == null && typeof normalizedBean.capacity === 'string' && normalizedBean.capacity) {
     normalizedBean.remaining = normalizedBean.capacity;

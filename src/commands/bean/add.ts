@@ -19,8 +19,6 @@ function buildBeanData(args: Record<string, string | boolean | undefined>) {
   const beanData: Record<string, unknown> = {
     name: args.name,
     roaster: args.roaster,
-    origin: args.origin,
-    process: args.process,
   };
 
   const blendComponent: Record<string, unknown> = {
@@ -33,7 +31,6 @@ function buildBeanData(args: Record<string, string | boolean | undefined>) {
   }
 
   if (typeof args.variety === 'string' && args.variety) {
-    beanData.variety = args.variety;
     blendComponent.variety = args.variety;
   }
   if (typeof args['roast-level'] === 'string' && args['roast-level']) {
@@ -41,6 +38,9 @@ function buildBeanData(args: Record<string, string | boolean | undefined>) {
   }
   if (typeof args['roast-date'] === 'string' && args['roast-date']) {
     beanData.roastDate = args['roast-date'];
+    beanData.isInTransit = false;
+  } else {
+    beanData.isInTransit = true;
   }
   if (typeof args.price === 'string' && args.price) {
     beanData.price = args.price;
@@ -49,6 +49,12 @@ function buildBeanData(args: Record<string, string | boolean | undefined>) {
     beanData.capacity = normalizedCapacity;
   }
   beanData.beanType = typeof args['bean-type'] === 'string' && args['bean-type'] ? args['bean-type'] : 'filter';
+  if (!beanData.roastLevel && beanData.beanType === 'filter') {
+    beanData.roastLevel = '浅度烘焙';
+  }
+  if (!beanData.roastLevel && beanData.beanType === 'espresso') {
+    beanData.roastLevel = '中深烘焙';
+  }
   if (typeof args.flavor === 'string' && args.flavor) {
     beanData.flavor = args.flavor
       .split(',')
