@@ -13,7 +13,7 @@
 - **【必要配置】** 需要在 Supabase 数据库里创建一个函数：`public.get_all_roasters()`，它会从：
    - `public.coffee_beans.data->>'roaster'`
    - `public.brewing_notes.data->>'roaster'`
-里取值、过滤空值，并做去重后返回 text 列表
+里取值、过滤空值，并做去重后返回 text 列表。
 ```sql
   select distinct trim(both from r.roaster) as "roaster"
   from (
