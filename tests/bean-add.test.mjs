@@ -57,7 +57,10 @@ test('brew-guide bean add --dry-run --format json returns a structured preview',
   const payload = JSON.parse(result.stdout);
   assert.equal(payload.dryRun, true);
   assert.equal(payload.bean.name, 'X');
-  assert.equal(payload.bean.process, 'P');
+  assert.equal(payload.bean.beanType, 'filter');
+  assert.equal(payload.bean.roastLevel, '浅度烘焙');
+  assert.equal(payload.bean.isInTransit, true);
+  assert.deepEqual(payload.bean.blendComponents, [{ origin: 'O', process: 'P' }]);
 });
 
 test('brew-guide bean add fails when required arguments are missing', () => {
