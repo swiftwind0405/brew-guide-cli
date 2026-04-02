@@ -21,6 +21,13 @@ npm install -g brew-guide-cli
 
 安装后，`brew-guide` 命令即可在终端中全局可用。
 
+## 直接 Agent 对话配置
+
+```txt
+帮我通过以下命令安装`brew-guide-cli`: `npm install -g brew-guide-cli` ，然后通过以下命令安装相关 skills `npx skills add github.com/swiftwind0405/brew-guide-cli -y -g` 。安装完成后，根据`https://github.com/swiftwind0405/brew-guide-cli/blob/master/README.md`进行openclaw里面的所有配置。
+```
+
+
 ## 初始化配置
 
 首次使用前，需要配置 Supabase 连接信息：
