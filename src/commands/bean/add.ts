@@ -14,7 +14,7 @@ function normalizeWeight(value: string | undefined) {
 }
 
 function buildBeanData(args: Record<string, string | boolean | undefined>) {
-  const normalizedCapacity = normalizeWeight(args.capacity);
+  const normalizedCapacity = typeof args.capacity === 'string' ? normalizeWeight(args.capacity) : undefined;
 
   const beanData: Record<string, unknown> = {
     name: args.name,

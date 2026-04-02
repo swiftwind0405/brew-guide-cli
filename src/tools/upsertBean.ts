@@ -105,14 +105,16 @@ export async function executeUpsertBean(
   if (typeof normalizedBean.isFrozen !== 'boolean') {
     normalizedBean.isFrozen = false;
   }
-  if (typeof normalizedBean.startDay === 'string' && normalizedBean.startDay.trim()) {
-    const parsed = Number(normalizedBean.startDay);
+  const startDayValue = normalizedBean.startDay as unknown;
+  if (typeof startDayValue === 'string' && startDayValue.trim()) {
+    const parsed = Number(startDayValue);
     if (Number.isFinite(parsed)) {
       normalizedBean.startDay = parsed;
     }
   }
-  if (typeof normalizedBean.endDay === 'string' && normalizedBean.endDay.trim()) {
-    const parsed = Number(normalizedBean.endDay);
+  const endDayValue = normalizedBean.endDay as unknown;
+  if (typeof endDayValue === 'string' && endDayValue.trim()) {
+    const parsed = Number(endDayValue);
     if (Number.isFinite(parsed)) {
       normalizedBean.endDay = parsed;
     }
