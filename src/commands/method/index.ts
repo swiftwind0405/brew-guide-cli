@@ -7,13 +7,13 @@ import updateCommand from './update.ts';
 
 export default defineCommand({
   meta: {
-    name: 'note',
-    description: 'Manage brewing notes.',
+    name: 'method',
+    description: 'Manage brewing methods / recipes.',
   },
   subCommands: {
-    add: addCommand,
     list: listCommand,
     get: getCommand,
+    add: addCommand,
     update: updateCommand,
     delete: deleteCommand,
   },
