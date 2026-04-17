@@ -19,6 +19,7 @@ export default defineCommand({
     rating: { type: 'string', description: 'Rating (1-5).' },
     method: { type: 'string', description: 'Method name.' },
     memo: { type: 'string', description: 'Tasting notes.' },
+    'dry-run': { type: 'boolean', description: 'Preview the operation without executing.' },
     format: { type: 'string' },
   },
   async run({ args }) {
@@ -32,6 +33,16 @@ export default defineCommand({
     if (Object.keys(updates).length === 0) {
       console.error('No fields to update. Use --rating, --method, --memo, etc.');
       process.exit(2);
+    }
+
+    if (args['dry-run']) {
+      if (args.format === 'json') {
+        console.log(JSON.stringify({ dryRun: true, action: 'update', id: args.id, updates }));
+      } else {
+        console.log(`[dry-run] Would update note ${args.id.slice(0, 8)}:\n${JSON.stringify(updates, null, 2)}`);
+      }
+      await logger.success();
+      return;
     }
 
     try {

@@ -18,6 +18,7 @@ export default defineCommand({
     id: { type: 'positional', required: true, description: 'Equipment ID.' },
     name: { type: 'string', description: 'Equipment name.' },
     note: { type: 'string', description: 'Note about the equipment.' },
+    'dry-run': { type: 'boolean', description: 'Preview the operation without executing.' },
     format: { type: 'string' },
   },
   async run({ args }) {
@@ -30,6 +31,16 @@ export default defineCommand({
     if (Object.keys(updates).length === 0) {
       console.error('No fields to update. Use --name, --note.');
       process.exit(2);
+    }
+
+    if (args['dry-run']) {
+      if (args.format === 'json') {
+        console.log(JSON.stringify({ dryRun: true, action: 'update', id: args.id, updates }));
+      } else {
+        console.log(`[dry-run] Would update equipment ${args.id.slice(0, 8)}:\n${JSON.stringify(updates, null, 2)}`);
+      }
+      await logger.success();
+      return;
     }
 
     try {

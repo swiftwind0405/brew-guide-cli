@@ -17,6 +17,7 @@ export default defineCommand({
   args: {
     id: { type: 'positional', required: true, description: 'Bean record ID.' },
     amount: { type: 'string', required: true, description: 'Grams to deduct (e.g., 15).' },
+    'dry-run': { type: 'boolean', description: 'Preview the operation without executing.' },
     format: { type: 'string' },
   },
   async run({ args }) {
@@ -26,6 +27,16 @@ export default defineCommand({
     if (Number.isNaN(amount) || amount <= 0) {
       console.error('Error: --amount must be a positive number.');
       process.exit(2);
+    }
+
+    if (args['dry-run']) {
+      if (args.format === 'json') {
+        console.log(JSON.stringify({ dryRun: true, action: 'consume', id: args.id, amount }));
+      } else {
+        console.log(`[dry-run] Would consume ${amount}g from bean ${args.id.slice(0, 8)}`);
+      }
+      await logger.success();
+      return;
     }
 
     try {

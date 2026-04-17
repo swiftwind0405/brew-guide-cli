@@ -23,20 +23,38 @@ export default defineCommand({
     },
     'has-valve': { type: 'boolean', default: false, description: 'Whether it has a valve (for immersion).' },
     note: { type: 'string', default: '', description: 'Note about the equipment.' },
+    'dry-run': { type: 'boolean', description: 'Preview the operation without executing.' },
     format: { type: 'string' },
   },
   async run({ args }) {
     const logger = createCommandLogger(['equipment', 'add'], args as Record<string, unknown>);
+
+    const equipmentData = {
+      name: args.name,
+      animationType: args['animation-type'] ?? 'custom',
+      hasValve: args['has-valve'] === true,
+      note: typeof args.note === 'string' ? args.note : '',
+    };
+
+    if (args['dry-run']) {
+      if (args.format === 'json') {
+        console.log(JSON.stringify({ dryRun: true, equipment: equipmentData }));
+      } else {
+        console.log(`[dry-run] Would add equipment:\n${JSON.stringify(equipmentData, null, 2)}`);
+      }
+      await logger.success();
+      return;
+    }
 
     try {
       const config = await resolveConfig();
       const supabase = createSupabaseClient(config);
       const result = await addEquipment(
         supabase,
-        args.name,
-        args['animation-type'] ?? 'custom',
-        args['has-valve'] === true,
-        typeof args.note === 'string' ? args.note : '',
+        equipmentData.name,
+        equipmentData.animationType,
+        equipmentData.hasValve,
+        equipmentData.note,
         config.brewGuideUserId,
       );
 

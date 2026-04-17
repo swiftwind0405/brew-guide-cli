@@ -16,10 +16,21 @@ export default defineCommand({
   },
   args: {
     id: { type: 'positional', required: true, description: 'Equipment ID.' },
+    'dry-run': { type: 'boolean', description: 'Preview the operation without executing.' },
     format: { type: 'string' },
   },
   async run({ args }) {
     const logger = createCommandLogger(['equipment', 'delete'], args as Record<string, unknown>);
+
+    if (args['dry-run']) {
+      if (args.format === 'json') {
+        console.log(JSON.stringify({ dryRun: true, action: 'delete', id: args.id }));
+      } else {
+        console.log(`[dry-run] Would delete equipment ${args.id.slice(0, 8)}`);
+      }
+      await logger.success();
+      return;
+    }
 
     try {
       const config = await resolveConfig();

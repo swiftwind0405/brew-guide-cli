@@ -17,6 +17,7 @@ export default defineCommand({
   args: {
     id: { type: 'positional', required: true, description: 'Method ID.' },
     name: { type: 'string', description: 'Method name.' },
+    'dry-run': { type: 'boolean', description: 'Preview the operation without executing.' },
     format: { type: 'string' },
   },
   async run({ args }) {
@@ -28,6 +29,16 @@ export default defineCommand({
     if (Object.keys(updates).length === 0) {
       console.error('No fields to update. Use --name.');
       process.exit(2);
+    }
+
+    if (args['dry-run']) {
+      if (args.format === 'json') {
+        console.log(JSON.stringify({ dryRun: true, action: 'update', id: args.id, updates }));
+      } else {
+        console.log(`[dry-run] Would update method ${args.id.slice(0, 8)}:\n${JSON.stringify(updates, null, 2)}`);
+      }
+      await logger.success();
+      return;
     }
 
     try {

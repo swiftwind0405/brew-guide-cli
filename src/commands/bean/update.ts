@@ -23,6 +23,7 @@ export default defineCommand({
     remaining: { type: 'string', description: 'Remaining amount.' },
     price: { type: 'string', description: 'Price.' },
     notes: { type: 'string', description: 'Notes.' },
+    'dry-run': { type: 'boolean', description: 'Preview the operation without executing.' },
     format: { type: 'string' },
   },
   async run({ args }) {
@@ -40,6 +41,16 @@ export default defineCommand({
     if (Object.keys(updates).length === 0) {
       console.error('No fields to update. Use --name, --roaster, etc.');
       process.exit(2);
+    }
+
+    if (args['dry-run']) {
+      if (args.format === 'json') {
+        console.log(JSON.stringify({ dryRun: true, action: 'update', id: args.id, updates }));
+      } else {
+        console.log(`[dry-run] Would update bean ${args.id.slice(0, 8)}:\n${JSON.stringify(updates, null, 2)}`);
+      }
+      await logger.success();
+      return;
     }
 
     try {

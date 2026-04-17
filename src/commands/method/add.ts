@@ -23,6 +23,7 @@ export default defineCommand({
     'grind-size': { type: 'string', default: '', description: 'Grind size.' },
     temp: { type: 'string', default: '', description: 'Water temperature.' },
     'stages-json': { type: 'string', description: 'Stages as JSON array.' },
+    'dry-run': { type: 'boolean', description: 'Preview the operation without executing.' },
     format: { type: 'string' },
   },
   async run({ args }) {
@@ -38,6 +39,29 @@ export default defineCommand({
       }
     }
 
+    const methodData = {
+      equipmentId: args['equipment-id'],
+      name: args.name,
+      params: {
+        coffee: args.coffee ?? '',
+        water: args.water ?? '',
+        ratio: args.ratio ?? '',
+        grindSize: args['grind-size'] ?? '',
+        temp: args.temp ?? '',
+        stages,
+      },
+    };
+
+    if (args['dry-run']) {
+      if (args.format === 'json') {
+        console.log(JSON.stringify({ dryRun: true, method: methodData }));
+      } else {
+        console.log(`[dry-run] Would add method:\n${JSON.stringify(methodData, null, 2)}`);
+      }
+      await logger.success();
+      return;
+    }
+
     try {
       const config = await resolveConfig();
       const supabase = createSupabaseClient(config);
@@ -45,14 +69,7 @@ export default defineCommand({
         supabase,
         args['equipment-id'],
         args.name,
-        {
-          coffee: args.coffee ?? '',
-          water: args.water ?? '',
-          ratio: args.ratio ?? '',
-          grindSize: args['grind-size'] ?? '',
-          temp: args.temp ?? '',
-          stages,
-        },
+        methodData.params,
         config.brewGuideUserId,
       );
 
