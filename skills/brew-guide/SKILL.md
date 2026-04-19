@@ -1,6 +1,6 @@
 ---
 name: brew-guide
-description: Use when the user wants to manage coffee beans, brewing notes, or related brew-guide records through the brew-guide CLI, including adding beans from images, recording brewing parameters, matching roaster names, and querying recent entries.
+description: Use when the user wants to manage coffee beans, brewing notes, equipment, brewing methods, or related brew-guide records through the brew-guide CLI, including adding beans from images, recording brewing parameters, managing equipment and recipes, matching roaster names, and querying recent entries.
 ---
 
 # Brew Guide Skill
@@ -11,15 +11,67 @@ description: Use when the user wants to manage coffee beans, brewing notes, or r
 
 **NEVER create incomplete records.** Always collect enough information before writing.
 
-## CLI Usage
+## CLI Command Overview
 
-- 查询烘焙商：`brew-guide roasters --format json`
-- 预览豆子写入：`brew-guide bean add ... --dry-run`
-- 正式写入豆子：`brew-guide bean add ...`
-- 预览冲煮记录写入：`brew-guide note add ... --dry-run`
-- 正式写入冲煮记录：`brew-guide note add ...`
-- 查询豆子：`brew-guide bean list [--limit N] [--format json]`
-- 查询冲煮记录：`brew-guide note list [--limit N] [--format json]`
+### init
+
+```bash
+brew-guide init
+```
+
+交互式配置 Supabase 凭证（URL、Service Role Key、User ID）。
+
+### bean — 管理咖啡豆
+
+| 子命令 | 用途 | 示例 |
+|---|---|---|
+| `bean add` | 新增豆子 | `brew-guide bean add --name "..." --roaster "..." --origin "..." --process "..." [options] [--dry-run]` |
+| `bean list` | 列出豆子 | `brew-guide bean list [--limit N] [--format json]` |
+| `bean get` | 查看单个豆子详情 | `brew-guide bean get <id> [--format json]` |
+| `bean update` | 更新豆子字段 | `brew-guide bean update <id> --name "..." --remaining "..." [--dry-run]` |
+| `bean delete` | 软删除豆子 | `brew-guide bean delete <id> [--dry-run]` |
+| `bean consume` | 扣减豆子余量 | `brew-guide bean consume <id> --amount 15 [--dry-run]` |
+
+### note — 管理冲煮记录
+
+| 子命令 | 用途 | 示例 |
+|---|---|---|
+| `note add` | 新增冲煮记录 | `brew-guide note add --bean-id "..." --method "..." [options] [--dry-run]` |
+| `note list` | 列出冲煮记录 | `brew-guide note list [--limit N] [--format json]` |
+| `note get` | 查看单条冲煮记录 | `brew-guide note get <id> [--format json]` |
+| `note update` | 更新冲煮记录 | `brew-guide note update <id> --rating 4 --memo "..." [--dry-run]` |
+| `note delete` | 软删除冲煮记录 | `brew-guide note delete <id> [--dry-run]` |
+
+### equipment — 管理器具
+
+| 子命令 | 用途 | 示例 |
+|---|---|---|
+| `equipment add` | 新增器具 | `brew-guide equipment add --name "V60" [--animation-type v60] [--has-valve] [--note "..."] [--dry-run]` |
+| `equipment list` | 列出器具 | `brew-guide equipment list [--format json]` |
+| `equipment get` | 查看单个器具 | `brew-guide equipment get <id> [--format json]` |
+| `equipment update` | 更新器具字段 | `brew-guide equipment update <id> --name "..." --note "..." [--dry-run]` |
+| `equipment delete` | 软删除器具 | `brew-guide equipment delete <id> [--dry-run]` |
+
+### method — 管理冲煮方案 / 食谱
+
+| 子命令 | 用途 | 示例 |
+|---|---|---|
+| `method add` | 新增冲煮方案 | `brew-guide method add --equipment-id "..." --name "..." [--coffee "15g"] [--water "225g"] [--ratio "1:15"] [--grind-size "24"] [--temp "92"] [--stages-json '[...]'] [--dry-run]` |
+| `method list` | 列出冲煮方案 | `brew-guide method list [--equipment-id "..."] [--format json]` |
+| `method get` | 查看单个方案 | `brew-guide method get <id> [--format json]` |
+| `method update` | 更新方案名称 | `brew-guide method update <id> --name "..." [--dry-run]` |
+| `method delete` | 删除方案 | `brew-guide method delete <id> [--dry-run]` |
+
+### roasters — 查询烘焙商
+
+```bash
+brew-guide roasters [--format json]
+```
+
+### 通用 flags
+
+- `--dry-run`：预览即将执行的操作，不实际写入
+- `--format json`：以 JSON 格式输出结果
 
 优先使用 `--dry-run` 展示即将写入的内容，再在用户确认后执行正式写入。
 
@@ -146,13 +198,25 @@ brew-guide bean add \
   --capacity "150G" \
   --bean-type "filter" \
   --flavor "清晰花香,橙子,水果茶,柑橘酸质" \
-  --start-day 30 \
-  --end-day 60 \
   --notes "海拔：1920M" \
   --dry-run
 ```
 
 用户确认后，再去掉 `--dry-run` 正式写入。
+
+### 9. 更新与消耗
+
+更新豆子字段（支持 `--name / --roaster / --roast-level / --capacity / --remaining / --price / --notes`）：
+
+```bash
+brew-guide bean update <id> --remaining "120" --dry-run
+```
+
+扣减余量（每次冲煮后自动扣减）：
+
+```bash
+brew-guide bean consume <id> --amount 15 --dry-run
+```
 
 ### Bean Anti-Patterns
 
@@ -167,8 +231,8 @@ brew-guide bean add \
 
 ### 1. 收集这些字段
 
-- `beanId`
-- `method`
+- `beanId`（必填）
+- `method`（必填）
 - `grindSize`
 - `waterTemp`
 - `ratio`
@@ -206,11 +270,86 @@ brew-guide note add \
 
 确认后再正式写入。
 
+### 4. 更新冲煮记录
+
+支持更新 `--rating`（1-5）、`--method`、`--memo`：
+
+```bash
+brew-guide note update <id> --rating 4 --memo "回甘更好" --dry-run
+```
+
 ### Note Anti-Patterns
 
 ❌ 不要不关联 `beanId` 就直接记冲煮  
 ❌ 不要跳过 dry-run  
 ❌ 不要写出 0-100 之外的 `score`  
+
+---
+
+## Equipment Workflow
+
+### 1. 新增器具
+
+**必填**：`name`
+
+**可选**：
+- `--animation-type`：可选 `v60 / kalita / origami / clever / custom / espresso`，默认 `custom`
+- `--has-valve`：是否有阀门（浸泡式器具用）
+- `--note`：备注
+
+```bash
+brew-guide equipment add \
+  --name "Hario V60 02" \
+  --animation-type "v60" \
+  --note "透明树脂版" \
+  --dry-run
+```
+
+### 2. 查询与管理
+
+```bash
+brew-guide equipment list --format json
+brew-guide equipment get <id> --format json
+brew-guide equipment update <id> --name "..." --note "..." --dry-run
+brew-guide equipment delete <id> --dry-run
+```
+
+---
+
+## Method Workflow
+
+冲煮方案属于某个器具，新增方案前需要先知道 `equipment-id`。
+
+### 1. 新增方案
+
+```bash
+brew-guide method add \
+  --equipment-id "equip_xxx" \
+  --name "四六法" \
+  --coffee "20g" \
+  --water "300g" \
+  --ratio "1:15" \
+  --grind-size "Comandante 24 clicks" \
+  --temp "93" \
+  --stages-json '[{"label":"闷蒸","pourType":"center","water":"60","duration":30},{"label":"第二注","pourType":"circle","water":"60","duration":15}]' \
+  --dry-run
+```
+
+### 2. 查询与管理
+
+```bash
+brew-guide method list --format json
+brew-guide method list --equipment-id "equip_xxx" --format json
+brew-guide method get <id> --format json
+brew-guide method update <id> --name "改良四六法" --dry-run
+brew-guide method delete <id> --dry-run
+```
+
+### Method Anti-Patterns
+
+❌ 不要不关联 `equipment-id` 就新增方案  
+❌ 不要跳过 dry-run  
+❌ `--stages-json` 必须是合法 JSON 数组  
 
 ---
 
@@ -220,8 +359,19 @@ brew-guide note add \
 
 - `brew-guide bean list`
 - `brew-guide bean list --format json --limit 20`
+- `brew-guide bean get <id> --format json`
 - `brew-guide note list`
 - `brew-guide note list --format json --limit 20`
+- `brew-guide note get <id> --format json`
+- `brew-guide equipment list --format json`
+- `brew-guide method list --format json`
 - `brew-guide roasters --format json`
 
 在新建 bean 或 note 前，如果需要查重、补上下文、确认 beanId，先查最近记录。
+
+---
+
+## Delete 操作注意
+
+所有 delete 操作均为**软删除**（bean、note、equipment）。method 的 delete 为硬删除。
+执行删除前务必先 `--dry-run` 确认目标 ID。
