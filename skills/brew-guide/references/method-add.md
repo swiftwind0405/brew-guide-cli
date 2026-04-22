@@ -26,6 +26,18 @@
 brew-guide equipment list --format json
 ```
 
+### 经验补充（很重要）
+
+- `brew-guide method` 的 `equipment-id` 当前实际上是一个**自由字符串键**；即使 `equipment list` 为空，也仍然可以直接用任意字符串创建方案。
+- `method list` 返回的 `_equipmentId` 就是实际挂载的器具键；应用是否能显示，取决于这个键是否和应用内置设备键一致，而不只是中文展示名一致。
+- 已验证的应用默认的设备映射：
+  - `V60` → `V60`
+  - `蛋糕滤杯` → `Kalita`
+  - `折纸滤杯` → `Origami`
+  - `聪明杯` → `CleverDripper`
+  - `咖啡机` → `Espresso`
+- 因此：`equipment list` 主要用于探测现有命名；**不能**因为它为空就断定 method 不能新增。对内置设备，优先复用已验证的 `_equipmentId`，不要直接拿 UI 中文名当 key。
+
 ## 3. stages-json Schema
 
 必须是合法 JSON **数组**，每个元素是一个 stage：
@@ -35,11 +47,20 @@ brew-guide equipment list --format json
   {
     "label": "闷蒸",           // 必填，步骤名
     "pourType": "center",      // 必填，注水方式
-    "water": "60",             // 本段水量（`pourType=wait` 可省；其他注水步骤必填）
-    "duration": 30             // 必填，本段时长（秒）
+    "water": "60",             // 本段水量（`pourType=wait` 可省；其他注水步骤通常应填）
+    "duration": 30,             // 推荐；有明确时间时填写
+    "detail": ""               // 可选
   }
 ]
 ```
+
+### 实际兼容性说明
+
+- 当前 CLI / 存储层对 stage 的校验比文档宽松：**非 `wait` 步骤没有 `duration` 也能成功写入**。
+- 所以，图片只给了总时长、阶段结束点或只给了注水量时，可以：
+  - 对有明确时间点的 stage 写 `duration`
+  - 对没有明确单段时长的 stage **省略 `duration`**，不要硬猜
+- `water` 字段既可存单段水量，也可存“补到总量/剩余至 180-190g”这类文字，只要这是用户想保留的原始方案表达。
 
 ### pourType 可选值
 
@@ -49,6 +70,33 @@ brew-guide equipment list --format json
 - `bypass`：bypass/兑水
 - `wait`：等待/焖蒸静置（不输出 water）
 - `other`：其他/自定义
+- `extraction`：意式萃取（已用 `brew-guide method add --dry-run` 验证可写入）
+
+### 额外 stage 字段
+
+- `stages-json` 当前也会透传未在文档主 schema 中强调的附加字段。
+- 已用 `brew-guide method add --dry-run` 验证：聪明杯步骤可附带 `"valveStatus":"closed"` 这类字段，写法示例：
+
+```json
+[
+  {
+    "label": "[关阀]焖蒸(绕圈注水)",
+    "water": "30",
+    "detail": "中心向外绕圈，确保均匀萃取",
+    "duration": 10,
+    "pourType": "circle",
+    "valveStatus": "closed"
+  },
+  {
+    "label": "等待",
+    "detail": "",
+    "duration": 20,
+    "pourType": "wait"
+  }
+]
+```
+
+- 这类附加字段应尽量只在用户明确提供、或需要对齐应用内置设备行为时使用；不要凭空发明字段名。
 
 ### 常见模式
 
@@ -99,7 +147,13 @@ brew-guide method update <id> --name "改良四六法" --dry-run
 brew-guide method delete <id> --dry-run
 ```
 
-> `method update` 当前**只支持 `--name`**，不能改 `params / stages`。需要改参数只能 `delete` 后重新 `add`。
+> `method update` 当前**只支持 `--name`**，不能改 `params / stages / equipment-id`。
+>
+> 需要改参数只能 `delete` 后重新 `add`；需要**改挂载器具**时，正确流程是：
+> 1. 用新的 `equipment-id` 先 `method add --dry-run`
+> 2. 正式 `method add`
+> 3. 验证 `method get / method list`
+> 4. 再删除旧 method
 >
 > `method delete` 是**硬删除**，执行前务必 dry-run 确认 ID。
 
