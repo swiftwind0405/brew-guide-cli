@@ -19,11 +19,11 @@
 
 **可选**
 - `roastLevel`
-- `startDay`
-- `endDay`
 - `price`
 - `flavor`
 - `notes`
+
+> `startDay / endDay` CLI 不支持 flag 传参，新增时固定 `30 / 60`。
 
 ## 2. 烘焙商先匹配
 
@@ -63,7 +63,7 @@ brew-guide roasters --format json
 - `beanType` 没给时，默认按 `filter`
 - `beanType = filter` 且没给 `roastLevel` 时，默认 `浅度烘焙`
 - `beanType = espresso` 且没给 `roastLevel` 时，默认 `中深烘焙`
-- `startDay` / `endDay` 没给时，默认 `30 / 60`
+- `startDay / endDay` CLI 固定 `30 / 60`，无 flag 可覆盖
 
 ## 5. 在途豆规则
 
@@ -137,6 +137,55 @@ brew-guide bean update <id> --remaining "120" --dry-run
 ```bash
 brew-guide bean consume <id> --amount 15 --dry-run
 ```
+
+## 10. 从图片提取（OCR）
+
+用户给图片时按此规则抽取，再映射 CLI flags。**只取明确可见信息，不编造**。
+
+### 角色
+
+OCR 工具。直接返回 JSON：单豆 `{}`，多豆 `[]`。无 markdown/解释。
+
+### 字段
+
+**必填**
+- `name`：豆名（如 `"埃塞俄比亚赏花日晒原生种"`）
+
+**可选**（图中明确才填）
+- `roaster`：烘焙商/品牌（如 `"西可"`）
+- `capacity` / `price`：纯数字，无单位
+- `remaining`：纯数字，无单位（**仅 `bean update` 用，`bean add` 时 `remaining` 自动等于 `capacity`**）
+- `roastDate`：`YYYY-MM-DD`，缺年份补 `2026`
+- `roastLevel`：`极浅烘焙|浅度烘焙|中浅烘焙|中度烘焙|中深烘焙|深度烘焙`
+- `beanType`：`filter|espresso|omni`
+  - ≤200g / 浅烘 / 单品 → `filter`
+  - ≥300g / 深烘 / 拼配 → `espresso`
+  - 标注全能 → `omni`
+  - 默认 `filter`
+- `flavor`：数组 `["橘子","荔枝"]`
+- `startDay` / `endDay`：养豆期/赏味期天数
+- `blendComponents`：产地/庄园/处理法/品种
+  ```json
+  [{"origin":"埃塞俄比亚","estate":"赏花","process":"日晒","variety":"原生种"}]
+  ```
+- `notes`：处理站/海拔/批次号等补充。**产地和庄园放 `blendComponents`，此处只放补充**
+
+### 规则
+
+- 数值不带单位
+- 不编造、不确定不填
+- 直接返回 JSON
+
+### 映射到 CLI
+
+OCR JSON → flags：
+- `blendComponents[0].origin/estate/process/variety` → `--origin/--estate/--process/--variety`
+- `flavor` 数组 → `--flavor "a,b,c"`（逗号拼接）
+- 多豆数组 → 每豆分别 `bean add`
+- `startDay / endDay` 抽到也无法传入（CLI 无对应 flag），需要时事后 `bean update` 不支持，直接忽略或写入 `notes`
+- `remaining` 抽到且与 `capacity` 不等 → `bean add` 后再 `bean update <id> --remaining "X"`
+
+拼配豆（多个 `blendComponents`）当前 CLI 仅单组产地/处理/品种，其余成分写入 `--notes`。
 
 ## Anti-Patterns
 

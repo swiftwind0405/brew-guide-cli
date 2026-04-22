@@ -35,7 +35,7 @@ brew-guide equipment list --format json
   {
     "label": "闷蒸",           // 必填，步骤名
     "pourType": "center",      // 必填，注水方式
-    "water": "60",             // 必填，本段水量（累计或单次，按项目约定）
+    "water": "60",             // 本段水量（`pourType=wait` 可省；其他注水步骤必填）
     "duration": 30             // 必填，本段时长（秒）
   }
 ]
@@ -46,6 +46,8 @@ brew-guide equipment list --format json
 - `center`：中心注水
 - `circle`：绕圈注水
 - `ice`：冰块
+- `bypass`：bypass/兑水
+- `wait`：等待/焖蒸静置（不输出 water）
 - `other`：其他/自定义
 
 ### 常见模式
@@ -97,11 +99,146 @@ brew-guide method update <id> --name "改良四六法" --dry-run
 brew-guide method delete <id> --dry-run
 ```
 
+> `method update` 当前**只支持 `--name`**，不能改 `params / stages`。需要改参数只能 `delete` 后重新 `add`。
+>
 > `method delete` 是**硬删除**，执行前务必 dry-run 确认 ID。
+
+## 6. 从图片提取方案（OCR）
+
+用户给图片时，按下方提示词严格抽取 JSON，再映射到 CLI flags。只取图中明确可见文字，**不编造不脑补**。
+
+### 角色
+
+严格的咖啡冲煮方案 OCR 与结构化抽取工具。输出 1 个 JSON object，不要 markdown/解释/代码块/额外文本。
+
+### 输出格式
+
+```json
+{
+  "name": "方案名",
+  "params": {
+    "coffee": "15g",
+    "water": "225g",
+    "ratio": "1:15",
+    "grindSize": "C40 MK3 #24",
+    "temp": "91°C",
+    "stages": [
+      {
+        "pourType": "center|circle|ice|bypass|wait|other",
+        "label": "步骤名",
+        "water": "30",
+        "duration": 5,
+        "detail": "绕圈注水"
+      }
+    ]
+  }
+}
+```
+
+### 字段规则
+
+1. 顶层必输 `name` + `params`
+2. `params.stages` 数组，按时间顺序
+3. 顶层字段保留单位：`coffee "15g"` / `water "225g"` / `ratio "1:15"` / `grindSize` 原文 / `temp "91°C"`
+4. `stage.water` 纯数字字符串，无单位（如 `"30"`）
+5. `stage.duration` 整数秒
+6. wait 步骤：`pourType="wait"`，`label="等待"`，有 `duration`，不输出 `water`，`detail=""`
+7. 非 wait 步骤尽量输出 `label/duration/detail`；`water` 仅图片明确注水量时输出
+
+### 识别原则
+
+1. 只提取明确可见信息，不编造
+2. 无明确方案名 → 用图中最显标题或器具名，不自创花哨名
+3. 同图只输 1 个最完整方案
+4. `detail` 保原意，不加新信息
+5. `coffee/water/ratio` 图中未明确写 → 空字符串 `""`，不猜
+6. 阶段水量/累计水量/液重/bypass 水量 **不能**当 `coffee`
+7. 只有图片明写"粉量/coffee dose"才填 `coffee`
+8. 只有图片明写"总水量/总注水量/water"才填 `params.water`
+9. `ratio` 需图片明写，或顶层同时有"粉量+总水量"才可推算
+
+### 注水类型映射
+
+- 中心注水 → `center`
+- 绕圈/画圈/螺旋 → `circle`
+- 加冰/冰块 → `ice`
+- bypass/兑水 → `bypass`
+- 焖蒸后静置/浸泡等待 → `wait`
+- 同步骤两种注水动作无法拆分（如"绕圈后回到中心"）→ `other`，原说明放 `detail`
+
+### 时间处理
+
+1. 行首时间/时间区间 + 同行克数（如 `"0"-7" 40g"`）= 注水步骤，非 wait
+2. 首条区间从 0 秒起 → 第一步必为注水，前面不生成 wait
+3. 区间格式支持：`0:20-0:40` / `00:20 - 00:40` / `35"-1'00"`，先转秒再求 duration
+4. `duration = 结束 - 开始`。例 `0:50-1:02` → 12 秒，**不是** 62 秒
+5. 当前步结束 < 下一步开始 → 中间插 wait，`duration = 下一步开始 - 当前步结束`
+6. 间隔 ≤ 0 不生成 wait
+7. "焖蒸 30 秒，注水 10 秒，50g" 拆成：注水步（duration=10, water="50"）+ wait（duration=20）
+
+### 水量处理
+
+1. 先判"单段"还是"累计"
+2. 水量随时间递增且末段 = 总水量 → 累计
+3. 累计 → 输出时转增量：首段原值，后续 `water = 当前累计 - 上段累计`
+4. 例：总 225g，标 30/150/225 → 输出 30/120/75
+5. 无法判断则保守，不编造差分
+6. "时间区间+克数列表"形式默认视为累计注水量
+
+### Few-shot 示例
+
+**示例 1**：锥形滤杯，15g/225g/91°C/C40 MK3 #24；0:00-0:05 绕圈 30g；0:20-0:40 绕圈后回中心 150g（累计）；0:50-1:02 中心 225g（累计）
+
+```json
+{
+  "name": "锥形滤杯",
+  "params": {
+    "coffee": "15g",
+    "water": "225g",
+    "ratio": "1:15",
+    "grindSize": "C40 MK3 #24",
+    "temp": "91°C",
+    "stages": [
+      {"pourType":"circle","label":"第一段","water":"30","duration":5,"detail":"绕圈注水"},
+      {"pourType":"wait","label":"等待","duration":15,"detail":""},
+      {"pourType":"other","label":"第二段","water":"120","duration":20,"detail":"绕圈注水后回到中心注水"},
+      {"pourType":"wait","label":"等待","duration":10,"detail":""},
+      {"pourType":"center","label":"第三段","water":"75","duration":12,"detail":"中心注水"}
+    ]
+  }
+}
+```
+
+**示例 2**：Thiriku washed(AA)，95°C，C40 #22格；`0"-7" 40g` / `35"-1'00" 155g` / `1'35"-1'50" 255g` / bypass；无明确粉量与总水量字段名
+
+```json
+{
+  "name": "Thiriku washed(AA)",
+  "params": {
+    "coffee": "",
+    "water": "",
+    "ratio": "",
+    "grindSize": "C40 #22格",
+    "temp": "95°C",
+    "stages": [
+      {"pourType":"circle","label":"第一段","water":"40","duration":7,"detail":""},
+      {"pourType":"wait","label":"等待","duration":28,"detail":""},
+      {"pourType":"circle","label":"第二段","water":"115","duration":25,"detail":""},
+      {"pourType":"wait","label":"等待","duration":35,"detail":""},
+      {"pourType":"circle","label":"第三段","water":"100","duration":15,"detail":""},
+      {"pourType":"bypass","label":"Bypass","detail":"bypass"}
+    ]
+  }
+}
+```
+
+### 映射到 CLI
+
+OCR JSON 抽出后按 `params` 各字段填入对应 flag，`stages` 整体塞 `--stages-json`。先 `--dry-run` 验证再提交。
 
 ## Anti-Patterns
 
 - ❌ 不要不关联 `equipment-id` 就新增方案
 - ❌ 不要跳过 dry-run
-- ❌ `--stages-json` 必须是合法 JSON 数组，各 stage 必须包含 `label / pourType / water / duration`
+- ❌ `--stages-json` 必须是合法 JSON 数组。注水步骤含 `label / pourType / water / duration`；`wait` 步骤含 `label / pourType / duration`（无 water）
 - ❌ 不要在 `pourType` 里写中文或自定义字符串，只用枚举值
