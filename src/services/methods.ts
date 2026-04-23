@@ -118,7 +118,11 @@ export async function updateMethod(
     for (let i = 0; i < methods.length; i++) {
       const m = methods[i] as Record<string, unknown>;
       if (m.id === methodId) {
-        const updated = { ...m, ...updates };
+        const mergedParams =
+          updates.params && typeof updates.params === 'object'
+            ? { ...(m.params as Record<string, unknown> | undefined ?? {}), ...(updates.params as Record<string, unknown>) }
+            : m.params;
+        const updated = { ...m, ...updates, params: mergedParams };
         methods[i] = updated;
         data.methods = methods;
         await upsertRecord(supabase, TABLE, row.id, data, userId);

@@ -68,8 +68,10 @@ function buildBeanData(args: Record<string, string | boolean | undefined>) {
   beanData.blendComponents = [blendComponent];
   beanData.beanState = 'roasted';
   beanData.isFrozen = false;
-  beanData.startDay = 30;
-  beanData.endDay = 60;
+  const startDay = typeof args['start-day'] === 'string' && args['start-day'] ? Number(args['start-day']) : 30;
+  const endDay = typeof args['end-day'] === 'string' && args['end-day'] ? Number(args['end-day']) : 60;
+  beanData.startDay = Number.isFinite(startDay) ? startDay : 30;
+  beanData.endDay = Number.isFinite(endDay) ? endDay : 60;
 
   if (typeof normalizedCapacity === 'string' && normalizedCapacity) {
     beanData.remaining = normalizedCapacity;
@@ -102,6 +104,8 @@ export default defineCommand({
     'bean-type': { type: 'string' },
     flavor: { type: 'string' },
     notes: { type: 'string' },
+    'start-day': { type: 'string', description: 'Optimal start day after roast (default 30).' },
+    'end-day': { type: 'string', description: 'Optimal end day after roast (default 60).' },
     'dry-run': { type: 'boolean' },
     format: { type: 'string' },
   },

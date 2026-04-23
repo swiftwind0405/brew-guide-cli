@@ -17,6 +17,11 @@ export default defineCommand({
   args: {
     id: { type: 'positional', required: true, description: 'Method ID.' },
     name: { type: 'string', description: 'Method name.' },
+    coffee: { type: 'string', description: 'Coffee amount (e.g. "15g").' },
+    water: { type: 'string', description: 'Water amount (e.g. "225g").' },
+    ratio: { type: 'string', description: 'Brew ratio (e.g. "1:15").' },
+    'grind-size': { type: 'string', description: 'Grind size.' },
+    temp: { type: 'string', description: 'Water temp (e.g. "92°C").' },
     'dry-run': { type: 'boolean', description: 'Preview the operation without executing.' },
     format: { type: 'string' },
   },
@@ -26,8 +31,18 @@ export default defineCommand({
     const updates: Record<string, unknown> = {};
     if (typeof args.name === 'string') updates.name = args.name;
 
+    const paramUpdates: Record<string, unknown> = {};
+    if (typeof args.coffee === 'string' && args.coffee) paramUpdates.coffee = args.coffee;
+    if (typeof args.water === 'string' && args.water) paramUpdates.water = args.water;
+    if (typeof args.ratio === 'string' && args.ratio) paramUpdates.ratio = args.ratio;
+    if (typeof args['grind-size'] === 'string' && args['grind-size']) paramUpdates.grindSize = args['grind-size'];
+    if (typeof args.temp === 'string' && args.temp) paramUpdates.temp = args.temp;
+    if (Object.keys(paramUpdates).length > 0) {
+      updates.params = paramUpdates;
+    }
+
     if (Object.keys(updates).length === 0) {
-      console.error('No fields to update. Use --name.');
+      console.error('No fields to update. Use --name, --coffee, --water, --ratio, --grind-size, --temp.');
       process.exit(2);
     }
 

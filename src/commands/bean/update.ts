@@ -23,6 +23,9 @@ export default defineCommand({
     remaining: { type: 'string', description: 'Remaining amount.' },
     price: { type: 'string', description: 'Price.' },
     notes: { type: 'string', description: 'Notes.' },
+    'roast-date': { type: 'string', description: 'Roast date (YYYY-MM-DD).' },
+    'start-day': { type: 'string', description: 'Optimal start day after roast.' },
+    'end-day': { type: 'string', description: 'Optimal end day after roast.' },
     'dry-run': { type: 'boolean', description: 'Preview the operation without executing.' },
     format: { type: 'string' },
   },
@@ -37,6 +40,26 @@ export default defineCommand({
     if (typeof args.remaining === 'string') updates.remaining = args.remaining;
     if (typeof args.price === 'string') updates.price = args.price;
     if (typeof args.notes === 'string') updates.notes = args.notes;
+    if (typeof args['roast-date'] === 'string' && args['roast-date']) {
+      updates.roastDate = args['roast-date'];
+      updates.isInTransit = false;
+    }
+    if (typeof args['start-day'] === 'string' && args['start-day']) {
+      const n = Number(args['start-day']);
+      if (!Number.isFinite(n) || n < 0) {
+        console.error('Error: --start-day must be a non-negative number.');
+        process.exit(2);
+      }
+      updates.startDay = n;
+    }
+    if (typeof args['end-day'] === 'string' && args['end-day']) {
+      const n = Number(args['end-day']);
+      if (!Number.isFinite(n) || n < 0) {
+        console.error('Error: --end-day must be a non-negative number.');
+        process.exit(2);
+      }
+      updates.endDay = n;
+    }
 
     if (Object.keys(updates).length === 0) {
       console.error('No fields to update. Use --name, --roaster, etc.');

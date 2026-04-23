@@ -18,6 +18,8 @@ export default defineCommand({
     id: { type: 'positional', required: true, description: 'Equipment ID.' },
     name: { type: 'string', description: 'Equipment name.' },
     note: { type: 'string', description: 'Note about the equipment.' },
+    'animation-type': { type: 'string', description: 'Animation type: v60 / kalita / origami / clever / custom / espresso.' },
+    'has-valve': { type: 'string', description: 'Has valve: true or false.' },
     'dry-run': { type: 'boolean', description: 'Preview the operation without executing.' },
     format: { type: 'string' },
   },
@@ -27,9 +29,25 @@ export default defineCommand({
     const updates: Record<string, unknown> = {};
     if (typeof args.name === 'string') updates.name = args.name;
     if (typeof args.note === 'string') updates.note = args.note;
+    if (typeof args['animation-type'] === 'string' && args['animation-type']) {
+      const allowed = ['v60', 'kalita', 'origami', 'clever', 'custom', 'espresso'];
+      if (!allowed.includes(args['animation-type'])) {
+        console.error(`Error: --animation-type must be one of ${allowed.join(', ')}.`);
+        process.exit(2);
+      }
+      updates.animationType = args['animation-type'];
+    }
+    if (typeof args['has-valve'] === 'string' && args['has-valve']) {
+      const v = args['has-valve'].toLowerCase();
+      if (v !== 'true' && v !== 'false') {
+        console.error('Error: --has-valve must be "true" or "false".');
+        process.exit(2);
+      }
+      updates.hasValve = v === 'true';
+    }
 
     if (Object.keys(updates).length === 0) {
-      console.error('No fields to update. Use --name, --note.');
+      console.error('No fields to update. Use --name, --note, --animation-type, --has-valve.');
       process.exit(2);
     }
 

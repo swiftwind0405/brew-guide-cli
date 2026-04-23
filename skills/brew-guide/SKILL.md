@@ -39,10 +39,10 @@ brew-guide init
 
 | 子命令 | 用途 | 示例 |
 |---|---|---|
-| `bean add` | 新增（见 `references/bean-add.md`） | `brew-guide bean add --name "..." --roaster "..." --origin "..." --process "..." [options] [--dry-run]` |
+| `bean add` | 新增（见 `references/bean-add.md`） | `brew-guide bean add --name "..." --roaster "..." --origin "..." --process "..." [--start-day 30] [--end-day 60] [options] [--dry-run]` |
 | `bean list` | 列出 | `brew-guide bean list [--limit N] [--format json]` |
 | `bean get` | 详情 | `brew-guide bean get <id> [--format json]` |
-| `bean update` | 更新 | `brew-guide bean update <id> --remaining "..." [--dry-run]` |
+| `bean update` | 更新 | `brew-guide bean update <id> --remaining "..." [--roast-date "YYYY-MM-DD"] [--start-day 30] [--end-day 60] [--dry-run]` |
 | `bean delete` | 软删除 | `brew-guide bean delete <id> [--dry-run]` |
 | `bean consume` | 扣减余量 | `brew-guide bean consume <id> --amount 15 [--dry-run]` |
 
@@ -63,7 +63,7 @@ brew-guide init
 | `equipment add` | 新增 | `brew-guide equipment add --name "V60" [--id "V60"] [--animation-type v60] [--has-valve] [--note "..."] [--dry-run]` |
 | `equipment list` | 列出 | `brew-guide equipment list [--format json]` |
 | `equipment get` | 详情 | `brew-guide equipment get <id> [--format json]` |
-| `equipment update` | 更新 | `brew-guide equipment update <id> --name "..." --note "..." [--dry-run]` |
+| `equipment update` | 更新 | `brew-guide equipment update <id> --name "..." --note "..." [--animation-type v60] [--has-valve true] [--dry-run]` |
 | `equipment delete` | 软删除 | `brew-guide equipment delete <id> [--dry-run]` |
 
 `--animation-type` 可选：`v60 / kalita / origami / clever / custom / espresso`，默认 `custom`。
@@ -75,7 +75,7 @@ brew-guide init
 | `method add` | 新增（见 `references/method-add.md`） | `brew-guide method add --equipment-id "..." --name "..." [options] [--dry-run]` |
 | `method list` | 列出 | `brew-guide method list [--equipment-id "..."] [--format json]` |
 | `method get` | 详情 | `brew-guide method get <id> [--format json]` |
-| `method update` | 更新名称 | `brew-guide method update <id> --name "..." [--dry-run]` |
+| `method update` | 更新名称/参数 | `brew-guide method update <id> [--name "..."] [--coffee "15g"] [--water "225g"] [--ratio "1:15"] [--grind-size "..."] [--temp "92°C"] [--dry-run]` |
 | `method delete` | **硬删除** | `brew-guide method delete <id> [--dry-run]` |
 
 ### roasters — 查烘焙商
