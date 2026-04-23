@@ -21,6 +21,10 @@ export default defineCommand({
     memo: { type: 'string', description: 'Tasting notes.' },
     notes: { type: 'string', description: 'Free-form notes (authoritative; alias of --memo).' },
     equipment: { type: 'string', description: 'Equipment row id.' },
+    'taste-body': { type: 'string', description: 'Taste body 0-5.' },
+    'taste-acidity': { type: 'string', description: 'Taste acidity 0-5.' },
+    'taste-sweetness': { type: 'string', description: 'Taste sweetness 0-5.' },
+    'taste-bitterness': { type: 'string', description: 'Taste bitterness 0-5.' },
     'dry-run': { type: 'boolean', description: 'Preview the operation without executing.' },
     format: { type: 'string' },
   },
@@ -40,6 +44,20 @@ export default defineCommand({
     if (typeof args.equipment === 'string') updates.equipment = args.equipment;
     if (typeof args.notes === 'string') updates.notes = args.notes;
     else if (typeof args.memo === 'string') updates.notes = args.memo;
+
+    const taste: Record<string, number> = {};
+    for (const key of ['body', 'acidity', 'sweetness', 'bitterness'] as const) {
+      const raw = (args as Record<string, unknown>)[`taste-${key}`];
+      if (typeof raw === 'string' && raw) {
+        const n = Number.parseFloat(raw);
+        if (!Number.isFinite(n) || n < 0 || n > 5) {
+          console.error(`Error: --taste-${key} must be between 0 and 5.`);
+          process.exit(2);
+        }
+        taste[key] = n;
+      }
+    }
+    if (Object.keys(taste).length > 0) updates.taste = taste;
 
     if (Object.keys(updates).length === 0) {
       console.error('No fields to update. Use --rating, --method, --memo, --notes, --equipment.');

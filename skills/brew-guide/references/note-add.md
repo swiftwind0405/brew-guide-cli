@@ -16,6 +16,7 @@
 - `--source <tag>`   → `data.source`（例 `capacity-adjustment`、`quick-decrement`）
 - `--notes "..."`    → `data.notes`（`--memo` / `--flavor` 也会合并进同一字段）
 - `--total-time 150` → `data.totalTime`（秒，压过 `--brew-time`）
+- `--taste-body / --taste-acidity / --taste-sweetness / --taste-bitterness` 0–5 → `data.taste.{body,acidity,sweetness,bitterness}`
 
 **老字段（向后兼容，自动转换到真实形状）**：
 

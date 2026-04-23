@@ -30,6 +30,9 @@ export default defineCommand({
   },
   args: {
     limit: { type: 'string', default: '20' },
+    'roast-level': { type: 'string', description: 'Filter by roast level.' },
+    'bean-type': { type: 'string', description: 'Filter by bean type (filter / espresso).' },
+    'has-remaining': { type: 'string', description: 'Only beans with remaining > 0: true / false.' },
     format: { type: 'string' },
   },
   async run({ args }) {
@@ -38,6 +41,15 @@ export default defineCommand({
     if (Number.isNaN(limit) || limit <= 0) {
       await logger.error('Error: --limit must be a positive integer');
       exitWithError('Error: --limit must be a positive integer', 2);
+    }
+
+    let hasRemaining: boolean | undefined;
+    if (typeof args['has-remaining'] === 'string' && args['has-remaining']) {
+      const v = args['has-remaining'].toLowerCase();
+      if (v !== 'true' && v !== 'false') {
+        exitWithError('Error: --has-remaining must be "true" or "false".', 2);
+      }
+      hasRemaining = v === 'true';
     }
 
     try {
@@ -57,14 +69,28 @@ export default defineCommand({
         return;
       }
 
-      const records = JSON.parse(text);
+      const records: Array<Record<string, unknown>> = JSON.parse(text);
+
+      const parseGrams = (v: unknown) => {
+        if (typeof v !== 'string') return 0;
+        const m = v.match(/^([\d.]+)/);
+        return m ? Number.parseFloat(m[1]) : 0;
+      };
+      const filtered = records.filter((r) => {
+        if (typeof args['roast-level'] === 'string' && args['roast-level'] && r.roastLevel !== args['roast-level']) return false;
+        if (typeof args['bean-type'] === 'string' && args['bean-type'] && r.beanType !== args['bean-type']) return false;
+        if (hasRemaining === true && parseGrams(r.remaining) <= 0) return false;
+        if (hasRemaining === false && parseGrams(r.remaining) > 0) return false;
+        return true;
+      });
+
       if (args.format === 'json') {
-        console.log(JSON.stringify(records));
+        console.log(JSON.stringify(filtered));
         await logger.success();
         return;
       }
 
-      printHumanRecords(records);
+      printHumanRecords(filtered);
       await logger.success();
     } catch (error) {
       await logger.error(error);

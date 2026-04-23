@@ -40,7 +40,7 @@ brew-guide init
 | 子命令 | 用途 | 示例 |
 |---|---|---|
 | `bean add` | 新增（见 `references/bean-add.md`） | `brew-guide bean add --name "..." --roaster "..." --origin "..." --process "..." [--start-day 30] [--end-day 60] [options] [--dry-run]` |
-| `bean list` | 列出 | `brew-guide bean list [--limit N] [--format json]` |
+| `bean list` | 列出 | `brew-guide bean list [--limit N] [--roast-level "浅度烘焙"] [--bean-type filter] [--has-remaining true] [--format json]` |
 | `bean get` | 详情 | `brew-guide bean get <id> [--format json]` |
 | `bean update` | 更新 | `brew-guide bean update <id> --remaining "..." [--roast-date "YYYY-MM-DD"] [--start-day 30] [--end-day 60] [--dry-run]` |
 | `bean delete` | 软删除 | `brew-guide bean delete <id> [--dry-run]` |
@@ -50,10 +50,10 @@ brew-guide init
 
 | 子命令 | 用途 | 示例 |
 |---|---|---|
-| `note add` | 新增（见 `references/note-add.md`） | `brew-guide note add --bean-id "..." --method "..." [--equipment "V60"] [--rating 4] [--notes "..."] [--source tag] [--total-time 150] [legacy flat flags] [--dry-run]` |
-| `note list` | 列出 | `brew-guide note list [--limit N] [--format json]` |
+| `note add` | 新增（见 `references/note-add.md`） | `brew-guide note add --bean-id "..." --method "..." [--equipment "V60"] [--rating 4] [--notes "..."] [--source tag] [--total-time 150] [--taste-body 4 --taste-acidity 4 --taste-sweetness 3 --taste-bitterness 2] [legacy flat flags] [--dry-run]` |
+| `note list` | 列出 | `brew-guide note list [--limit N] [--equipment V60] [--method 日式] [--bean-id "..."] [--min-rating 3.5] [--format json]` |
 | `note get` | 详情 | `brew-guide note get <id> [--format json]` |
-| `note update` | 更新 | `brew-guide note update <id> --rating 4 --notes "..." [--equipment "V60"] [--dry-run]`（`--rating` 0–5，接受 `3.5` 这类小数）|
+| `note update` | 更新 | `brew-guide note update <id> --rating 4 --notes "..." [--equipment "V60"] [--taste-body 4] [--dry-run]`（`--rating` / `--taste-*` 0–5，接受 `3.5` 这类小数；taste 部分更新会与现有值合并）|
 | `note delete` | 软删除 | `brew-guide note delete <id> [--dry-run]` |
 
 ### equipment — 器具

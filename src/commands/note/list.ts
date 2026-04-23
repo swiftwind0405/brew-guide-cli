@@ -14,11 +14,12 @@ function printHumanRecords(records: Array<Record<string, unknown>>) {
     const fields = [
       record.id,
       record.method,
+      record.equipment,
       record.beanId,
-      record.score,
-      record.flavor,
+      record.rating ?? record.score,
+      record.notes ?? record.flavor,
       record.updated_at,
-    ].filter(Boolean);
+    ].filter((v) => v !== undefined && v !== null && v !== '');
     console.log(fields.join(' | '));
   }
 }
@@ -30,6 +31,10 @@ export default defineCommand({
   },
   args: {
     limit: { type: 'string', default: '20' },
+    equipment: { type: 'string', description: 'Filter by equipment id.' },
+    method: { type: 'string', description: 'Filter by method name (substring, case-insensitive).' },
+    'bean-id': { type: 'string', description: 'Filter by bean id.' },
+    'min-rating': { type: 'string', description: 'Only notes with rating >= N (0-5).' },
     format: { type: 'string' },
   },
   async run({ args }) {
@@ -38,6 +43,15 @@ export default defineCommand({
     if (Number.isNaN(limit) || limit <= 0) {
       await logger.error('Error: --limit must be a positive integer');
       exitWithError('Error: --limit must be a positive integer', 2);
+    }
+
+    let minRating: number | undefined;
+    if (typeof args['min-rating'] === 'string' && args['min-rating']) {
+      const n = Number.parseFloat(args['min-rating']);
+      if (!Number.isFinite(n) || n < 0 || n > 5) {
+        exitWithError('Error: --min-rating must be a number between 0 and 5.', 2);
+      }
+      minRating = n;
     }
 
     try {
@@ -57,14 +71,29 @@ export default defineCommand({
         return;
       }
 
-      const records = JSON.parse(text);
+      const records: Array<Record<string, unknown>> = JSON.parse(text);
+
+      const filtered = records.filter((r) => {
+        if (typeof args.equipment === 'string' && args.equipment && r.equipment !== args.equipment) return false;
+        if (typeof args.method === 'string' && args.method) {
+          const m = typeof r.method === 'string' ? r.method.toLowerCase() : '';
+          if (!m.includes(args.method.toLowerCase())) return false;
+        }
+        if (typeof args['bean-id'] === 'string' && args['bean-id'] && r.beanId !== args['bean-id']) return false;
+        if (minRating != null) {
+          const rating = typeof r.rating === 'number' ? r.rating : 0;
+          if (rating < minRating) return false;
+        }
+        return true;
+      });
+
       if (args.format === 'json') {
-        console.log(JSON.stringify(records));
+        console.log(JSON.stringify(filtered));
         await logger.success();
         return;
       }
 
-      printHumanRecords(records);
+      printHumanRecords(filtered);
       await logger.success();
     } catch (error) {
       await logger.error(error);

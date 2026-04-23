@@ -11,7 +11,7 @@ import { getErrorMessage, invalidParamsResult, isRecord, textResult } from '../l
 // custom_methods 每行代表一个 equipment，data 顶层只有 equipmentId + methods 数组，
 // 摘要能显示的标量很少。
 const SUMMARY_FIELDS: Record<string, string[]> = {
-  coffee_beans: ['name', 'roaster', 'origin', 'process', 'variety', 'roastLevel', 'startDay', 'endDay'],
+  coffee_beans: ['name', 'roaster', 'origin', 'process', 'variety', 'roastLevel', 'beanType', 'startDay', 'endDay', 'roastDate', 'capacity', 'remaining', 'price', 'isInTransit'],
   brewing_notes: [
     'method',
     'equipment',

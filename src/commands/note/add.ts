@@ -28,6 +28,15 @@ function buildNoteData(args: Record<string, string | boolean | undefined>) {
     const n = Number(args['total-time']);
     if (Number.isFinite(n)) noteData.totalTime = n;
   }
+  const taste: Record<string, number> = {};
+  for (const key of ['body', 'acidity', 'sweetness', 'bitterness'] as const) {
+    const raw = args[`taste-${key}`];
+    if (typeof raw === 'string' && raw) {
+      const n = Number(raw);
+      if (Number.isFinite(n) && n >= 0 && n <= 5) taste[key] = n;
+    }
+  }
+  if (Object.keys(taste).length > 0) noteData.taste = taste;
 
   // 老字段（由 normalizeNote 转换到真实形状）
   if (typeof args['grind-size'] === 'string' && args['grind-size']) {
@@ -76,6 +85,10 @@ export default defineCommand({
     source: { type: 'string', description: 'Source tag (e.g. quick-decrement, capacity-adjustment).' },
     notes: { type: 'string', description: 'Free-form notes (authoritative; prefer over --memo).' },
     'total-time': { type: 'string', description: 'Total brew time in seconds (authoritative; prefer over --brew-time).' },
+    'taste-body': { type: 'string', description: 'Taste body 0-5.' },
+    'taste-acidity': { type: 'string', description: 'Taste acidity 0-5.' },
+    'taste-sweetness': { type: 'string', description: 'Taste sweetness 0-5.' },
+    'taste-bitterness': { type: 'string', description: 'Taste bitterness 0-5.' },
     // legacy flat args — auto-normalized to real shape:
     'grind-size': { type: 'string', description: '[legacy] → params.grindSize.' },
     'water-temp': { type: 'string', description: '[legacy] → params.temp (°C).' },

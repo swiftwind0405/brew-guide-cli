@@ -75,7 +75,16 @@ export async function updateNote(
   const row = await fetchRecordById(supabase, TABLE, noteId, userId);
   if (!row) return null;
 
-  const merged = { ...row.data, ...updates, updatedAt: new Date().toISOString() };
+  const mergedTaste =
+    updates.taste && typeof updates.taste === 'object'
+      ? { ...(row.data.taste as Record<string, unknown> | undefined ?? {}), ...(updates.taste as Record<string, unknown>) }
+      : row.data.taste;
+  const merged: Record<string, unknown> = {
+    ...row.data,
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  };
+  if (mergedTaste !== undefined) merged.taste = mergedTaste;
   await upsertRecord(supabase, TABLE, noteId, merged, userId);
   return { ...merged, id: noteId };
 }
