@@ -79,7 +79,23 @@ export async function updateBean(
   const row = await fetchRecordById(supabase, TABLE, beanId, userId);
   if (!row) return null;
 
-  const merged = { ...row.data, ...updates };
+  const blendPatch: Record<string, unknown> = {};
+  for (const key of ['origin', 'process', 'variety', 'estate'] as const) {
+    if (updates[key] !== undefined) {
+      blendPatch[key] = updates[key];
+      delete updates[key];
+    }
+  }
+
+  const merged: Record<string, unknown> = { ...row.data, ...updates };
+
+  if (Object.keys(blendPatch).length > 0) {
+    const existing = Array.isArray(row.data.blendComponents) ? row.data.blendComponents : [];
+    const head = (existing[0] && typeof existing[0] === 'object' ? existing[0] : {}) as Record<string, unknown>;
+    const rest = existing.slice(1);
+    merged.blendComponents = [{ ...head, ...blendPatch }, ...rest];
+  }
+
   await upsertRecord(supabase, TABLE, beanId, merged, userId);
   return { ...merged, id: beanId };
 }

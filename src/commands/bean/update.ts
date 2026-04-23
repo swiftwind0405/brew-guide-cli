@@ -23,6 +23,10 @@ export default defineCommand({
     remaining: { type: 'string', description: 'Remaining amount.' },
     price: { type: 'string', description: 'Price.' },
     notes: { type: 'string', description: 'Notes.' },
+    origin: { type: 'string', description: 'Origin (merges into blendComponents[0]).' },
+    process: { type: 'string', description: 'Process (merges into blendComponents[0]).' },
+    variety: { type: 'string', description: 'Variety (merges into blendComponents[0]).' },
+    estate: { type: 'string', description: 'Estate (merges into blendComponents[0]).' },
     'roast-date': { type: 'string', description: 'Roast date (YYYY-MM-DD).' },
     'start-day': { type: 'string', description: 'Optimal start day after roast.' },
     'end-day': { type: 'string', description: 'Optimal end day after roast.' },
@@ -40,6 +44,10 @@ export default defineCommand({
     if (typeof args.remaining === 'string') updates.remaining = args.remaining;
     if (typeof args.price === 'string') updates.price = args.price;
     if (typeof args.notes === 'string') updates.notes = args.notes;
+    if (typeof args.origin === 'string' && args.origin) updates.origin = args.origin;
+    if (typeof args.process === 'string' && args.process) updates.process = args.process;
+    if (typeof args.variety === 'string' && args.variety) updates.variety = args.variety;
+    if (typeof args.estate === 'string' && args.estate) updates.estate = args.estate;
     if (typeof args['roast-date'] === 'string' && args['roast-date']) {
       updates.roastDate = args['roast-date'];
       updates.isInTransit = false;

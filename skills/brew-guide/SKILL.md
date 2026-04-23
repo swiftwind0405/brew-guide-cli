@@ -42,7 +42,7 @@ brew-guide init
 | `bean add` | 新增（见 `references/bean-add.md`） | `brew-guide bean add --name "..." --roaster "..." --origin "..." --process "..." [--start-day 30] [--end-day 60] [options] [--dry-run]` |
 | `bean list` | 列出 | `brew-guide bean list [--limit N] [--roast-level "浅度烘焙"] [--bean-type filter] [--has-remaining true] [--format json]` |
 | `bean get` | 详情 | `brew-guide bean get <id> [--format json]` |
-| `bean update` | 更新 | `brew-guide bean update <id> --remaining "..." [--roast-date "YYYY-MM-DD"] [--start-day 30] [--end-day 60] [--dry-run]` |
+| `bean update` | 更新 | `brew-guide bean update <id> --remaining "..." [--origin "..."] [--process "..."] [--variety "..."] [--estate "..."] [--roast-date "YYYY-MM-DD"] [--start-day 30] [--end-day 60] [--dry-run]`（origin/process/variety/estate 合并进 blendComponents[0]）|
 | `bean delete` | 软删除 | `brew-guide bean delete <id> [--dry-run]` |
 | `bean consume` | 扣减余量 | `brew-guide bean consume <id> --amount 15 [--dry-run]` |
 
