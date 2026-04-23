@@ -14,6 +14,26 @@ import {
 const TABLE = 'custom_equipments';
 
 /**
+ * 为自定义器具生成稳定的 ID。
+ * 与 brew-guide 主应用保持一致：优先沿用用户指定的 slug（例如 "V60"、"蛋糕滤杯"），
+ * 否则基于当前时间戳生成 `custom-xxxxxxx`，避免使用 UUID 造成跨表 join 困难。
+ */
+function deriveEquipmentId(explicit: string | undefined, name: string): string {
+  if (explicit && explicit.trim()) {
+    return explicit.trim();
+  }
+  const slug = name
+    .trim()
+    .toLowerCase()
+    .replace(/[^\p{Letter}\p{Number}]+/gu, '-')
+    .replace(/^-+|-+$/g, '');
+  if (slug) {
+    return `custom-${slug}-${Date.now().toString(36)}`;
+  }
+  return `custom-${Date.now().toString(36)}-${crypto.randomUUID().slice(0, 8)}`;
+}
+
+/**
  * 查询所有自定义器具。
  */
 export async function listEquipment(
@@ -51,8 +71,9 @@ export async function addEquipment(
   hasValve: boolean,
   note: string,
   userId: string,
+  id?: string,
 ): Promise<Record<string, unknown>> {
-  const eqId = crypto.randomUUID();
+  const eqId = deriveEquipmentId(id, name);
   const data: Record<string, unknown> = {
     name,
     isCustom: true,

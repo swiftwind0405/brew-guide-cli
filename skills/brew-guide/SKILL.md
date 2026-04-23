@@ -50,17 +50,17 @@ brew-guide init
 
 | 子命令 | 用途 | 示例 |
 |---|---|---|
-| `note add` | 新增（见 `references/note-add.md`） | `brew-guide note add --bean-id "..." --method "..." [options] [--dry-run]` |
+| `note add` | 新增（见 `references/note-add.md`） | `brew-guide note add --bean-id "..." --method "..." [--equipment "V60"] [--rating 4] [--notes "..."] [--source tag] [--total-time 150] [legacy flat flags] [--dry-run]` |
 | `note list` | 列出 | `brew-guide note list [--limit N] [--format json]` |
 | `note get` | 详情 | `brew-guide note get <id> [--format json]` |
-| `note update` | 更新 | `brew-guide note update <id> --rating 4 --memo "..." [--dry-run]` |
+| `note update` | 更新 | `brew-guide note update <id> --rating 4 --notes "..." [--equipment "V60"] [--dry-run]`（`--rating` 0–5，接受 `3.5` 这类小数）|
 | `note delete` | 软删除 | `brew-guide note delete <id> [--dry-run]` |
 
 ### equipment — 器具
 
 | 子命令 | 用途 | 示例 |
 |---|---|---|
-| `equipment add` | 新增 | `brew-guide equipment add --name "V60" [--animation-type v60] [--has-valve] [--note "..."] [--dry-run]` |
+| `equipment add` | 新增 | `brew-guide equipment add --name "V60" [--id "V60"] [--animation-type v60] [--has-valve] [--note "..."] [--dry-run]` |
 | `equipment list` | 列出 | `brew-guide equipment list [--format json]` |
 | `equipment get` | 详情 | `brew-guide equipment get <id> [--format json]` |
 | `equipment update` | 更新 | `brew-guide equipment update <id> --name "..." --note "..." [--dry-run]` |

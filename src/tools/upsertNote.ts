@@ -7,25 +7,107 @@ import { getErrorMessage, invalidParamsResult, isRecord, textResult } from '../l
 
 /**
  * brew_guide_upsert_note 工具的参数 schema。
+ *
+ * 真实 brewing_notes.data 形状（参考线上数据）：
+ *   { id, beanId, method, equipment, coffeeBeanInfo,
+ *     rating (0-5), taste {body,acidity,sweetness,bitterness},
+ *     notes, timestamp (unix ms), totalTime (number),
+ *     params { temp, ratio, water, coffee, grindSize, stages },
+ *     source }
+ *
+ * 此 schema 同时接受旧的扁平字段（score/flavor/memo/brewedAt/brewTime/waterTemp/
+ * ratio/grindSize），并在写入前转换到真实形状，保持 CLI 向后兼容。
  */
 export const upsertNoteParameters = Type.Object({
   note: Type.Object(
     {
       id: Type.Optional(Type.String({ description: 'Note record ID. Auto-generated if omitted.' })),
       beanId: Type.Optional(Type.String({ description: 'Associated coffee bean ID.' })),
-      method: Type.Optional(Type.String({ description: 'Brewing method (e.g. V60, Espresso).' })),
-      grindSize: Type.Optional(Type.String({ description: 'Grind size setting.' })),
-      waterTemp: Type.Optional(Type.Number({ description: 'Water temperature in Celsius.' })),
-      ratio: Type.Optional(Type.String({ description: 'Coffee to water ratio (e.g. 1:15).' })),
-      brewTime: Type.Optional(Type.String({ description: 'Total brew time.' })),
-      flavor: Type.Optional(Type.String({ description: 'Flavor description.' })),
-      score: Type.Optional(Type.Number({ description: 'Overall score (0-100).' })),
-      memo: Type.Optional(Type.String({ description: 'Additional notes.' })),
-      brewedAt: Type.Optional(Type.String({ description: 'Brew timestamp (ISO string).' })),
+      method: Type.Optional(Type.String({ description: 'Brewing method name (e.g. "日式冲煮").' })),
+      equipment: Type.Optional(Type.String({ description: 'Equipment ID (e.g. V60, Espresso).' })),
+      rating: Type.Optional(Type.Number({ description: 'Rating 0-5 (authoritative).' })),
+      totalTime: Type.Optional(Type.Number({ description: 'Total brew time in seconds.' })),
+      timestamp: Type.Optional(Type.Number({ description: 'Brew timestamp as unix ms.' })),
+      notes: Type.Optional(Type.String({ description: 'Free-form notes.' })),
+      source: Type.Optional(Type.String({ description: 'Source tag (e.g. quick-decrement, capacity-adjustment).' })),
+      // Legacy flat fields — transformed on write:
+      grindSize: Type.Optional(Type.String({ description: '[legacy] → params.grindSize.' })),
+      waterTemp: Type.Optional(Type.Number({ description: '[legacy] → params.temp (°C).' })),
+      ratio: Type.Optional(Type.String({ description: '[legacy] → params.ratio.' })),
+      brewTime: Type.Optional(Type.String({ description: '[legacy] → totalTime.' })),
+      flavor: Type.Optional(Type.String({ description: '[legacy] merged into notes.' })),
+      score: Type.Optional(Type.Number({ description: '[legacy] 0-100 → rating 0-5 (/20).' })),
+      memo: Type.Optional(Type.String({ description: '[legacy] → notes.' })),
+      brewedAt: Type.Optional(Type.String({ description: '[legacy] ISO → timestamp (unix ms).' })),
     },
     { additionalProperties: true },
   ),
 });
+
+/**
+ * 将用户输入（可能夹带老式扁平字段）归一化到真实 brewing_notes.data 形状。
+ * 原字段保留在结果中（additionalProperties）以维持向后兼容；
+ * 同时补齐权威字段（rating、notes、params.xxx、totalTime、timestamp）供 brew-guide 前端读取。
+ */
+function normalizeNote(input: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...input };
+
+  // rating: 优先显式 rating；否则 score(0-100) / 20，clamp 到 0-5。
+  if (typeof out.rating !== 'number' && typeof out.score === 'number') {
+    const r = out.score / 20;
+    out.rating = Math.max(0, Math.min(5, Math.round(r * 10) / 10));
+  }
+
+  // notes: 合并 memo / flavor。
+  const mergedNotes: string[] = [];
+  if (typeof out.notes === 'string' && out.notes) mergedNotes.push(out.notes);
+  if (typeof out.memo === 'string' && out.memo) mergedNotes.push(out.memo);
+  if (typeof out.flavor === 'string' && out.flavor) mergedNotes.push(`风味：${out.flavor}`);
+  if (mergedNotes.length > 0) {
+    out.notes = mergedNotes.join('\n');
+  }
+
+  // timestamp: brewedAt ISO → unix ms，否则默认 now。
+  if (typeof out.timestamp !== 'number') {
+    if (typeof out.brewedAt === 'string' && out.brewedAt) {
+      const parsed = Date.parse(out.brewedAt);
+      if (!Number.isNaN(parsed)) out.timestamp = parsed;
+    }
+    if (typeof out.timestamp !== 'number') out.timestamp = Date.now();
+  }
+
+  // totalTime: brewTime 字符串 "2:30" → 150 秒，或直接数字。
+  if (typeof out.totalTime !== 'number' && out.brewTime != null) {
+    if (typeof out.brewTime === 'number') {
+      out.totalTime = out.brewTime;
+    } else if (typeof out.brewTime === 'string') {
+      const m = out.brewTime.match(/^(\d+):(\d{1,2})$/);
+      if (m) {
+        out.totalTime = Number(m[1]) * 60 + Number(m[2]);
+      } else {
+        const n = Number(out.brewTime);
+        if (Number.isFinite(n)) out.totalTime = n;
+      }
+    }
+  }
+
+  // params.*: 合并 waterTemp/ratio/grindSize。
+  const params = isRecord(out.params) ? { ...(out.params as Record<string, unknown>) } : {};
+  if (params.temp == null && typeof out.waterTemp === 'number') {
+    params.temp = `${out.waterTemp}°C`;
+  }
+  if (params.ratio == null && typeof out.ratio === 'string') {
+    params.ratio = out.ratio;
+  }
+  if (params.grindSize == null && typeof out.grindSize === 'string') {
+    params.grindSize = out.grindSize;
+  }
+  if (Object.keys(params).length > 0) {
+    out.params = params;
+  }
+
+  return out;
+}
 
 /**
  * 执行冲煮记录 upsert 操作。
@@ -40,12 +122,13 @@ export async function executeUpsertNote(
   }
 
   const note = params.note;
-  const dataJson = JSON.stringify(note);
+  const id = (note.id as string) || generateId('note');
+  const normalized = normalizeNote(note);
+  const dataJson = JSON.stringify(normalized);
   if (dataJson.length > 64_000) {
     return textResult('Note data exceeds 64 KB limit. Reduce payload size before retrying.');
   }
 
-  const id = (note.id as string) || generateId('note');
   const ts = now();
 
   try {
@@ -56,7 +139,7 @@ export async function executeUpsertNote(
         {
           id,
           user_id: config.brewGuideUserId,
-          data: { ...note, id },
+          data: { ...normalized, id },
           updated_at: ts,
           deleted_at: null,
         },

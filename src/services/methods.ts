@@ -81,6 +81,7 @@ export async function addMethod(
       temp: params.temp ?? '',
       stages: params.stages ?? [],
     },
+    timestamp: Date.now(),
   };
 
   const row = await fetchRecordById(supabase, TABLE, equipmentId, userId);

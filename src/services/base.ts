@@ -45,25 +45,18 @@ export async function fetchRecordById(
 ): Promise<SupabaseRow | null> {
   const { data, error } = await supabase
     .from(table)
-    .select('id, data, updated_at, deleted_at')
+    .select('id, data, updated_at')
     .eq('user_id', userId)
-    .eq('id', recordId);
+    .eq('id', recordId)
+    .is('deleted_at', null)
+    .limit(1);
 
   if (error) {
     throw new Error(`Failed to fetch record ${recordId}: ${error.message}`);
   }
 
   const rows = (data ?? []) as SupabaseRow[];
-  if (rows.length === 0) {
-    return null;
-  }
-
-  const row = rows[0];
-  if (row.deleted_at != null) {
-    return null;
-  }
-
-  return row;
+  return rows.length === 0 ? null : rows[0];
 }
 
 /**

@@ -128,21 +128,32 @@ Important conventions:
 - delete is soft delete
 - payloads above 64 KB are rejected
 
-Common fields referenced by the code:
+Authoritative fields (match what the brew-guide frontend writes):
 
 - `id`
 - `beanId`
 - `method`
-- `equipment`
-- `grindSize`
-- `waterTemp`
-- `ratio`
-- `brewTime`
-- `flavor`
-- `score`
-- `rating`
-- `memo`
-- `brewedAt`
+- `equipment` (equipment ID, typically the `custom_methods` row id — e.g. `V60`)
+- `coffeeBeanInfo`
+- `rating` (numeric, 0–5)
+- `taste` (object: `{ body, acidity, sweetness, bitterness }`, each 0–5)
+- `notes` (free-form text)
+- `timestamp` (unix ms)
+- `totalTime` (number, seconds)
+- `source` (tag: `capacity-adjustment`, `quick-decrement`, ...)
+- `params` (object: `{ temp, ratio, water, coffee, grindSize, stages }`)
+- `image`
+
+CLI-only legacy fields accepted by `executeUpsertNote` and translated into the
+authoritative shape on write (see `normalizeNote` in `src/tools/upsertNote.ts`):
+
+- `score` (0–100) → `rating` (`score / 20`, clamped 0–5)
+- `memo`, `flavor` → merged into `notes`
+- `brewedAt` (ISO string) → `timestamp` (unix ms)
+- `brewTime` (`"2:30"` or seconds) → `totalTime`
+- `waterTemp` → `params.temp` (as `"${n}°C"`)
+- `ratio` → `params.ratio`
+- `grindSize` → `params.grindSize`
 
 Code reference:
 
@@ -167,6 +178,12 @@ Fields written by this repo on create include:
 - `hasValve`
 - `note`
 - `timestamp`
+
+ID convention:
+
+- the row `id` is a **stable slug** (e.g. `V60`, `Kalita`, `蛋糕滤杯`, or `custom-<slug>-<ts>`)
+- `addEquipment` accepts an optional `id` argument; if omitted, one is derived from `name`
+- **do not** use raw `crypto.randomUUID()` here — the same id is used as the `custom_methods` row key, so a non-deterministic UUID breaks the equipment ↔ methods join
 
 Code reference:
 
@@ -253,12 +270,12 @@ Important: if this function is renamed, removed, or its return shape changes, `b
 
 ## Summary-field assumptions in tooling
 
-`src/tools/listRecent.ts` exposes abbreviated records and assumes these summary fields are useful:
+`src/tools/listRecent.ts` exposes abbreviated records. Fields reflect the real payload shape; legacy fields are kept as fallbacks for historical rows:
 
 - `coffee_beans`: `name`, `roaster`, `origin`, `process`, `variety`, `roastLevel`, `startDay`, `endDay`
-- `brewing_notes`: `method`, `beanId`, `score`, `flavor`, `ratio`, `brewTime`
-- `custom_equipments`: `brand`, `model`, `name`, `equipmentType`, `category`
-- `custom_methods`: `name`, `title`, `category`, `description`, `method`
+- `brewing_notes`: `method`, `equipment`, `beanId`, `rating`, `totalTime`, `source`, `timestamp`, `notes` (+ legacy `score`, `flavor`, `ratio`, `brewTime`)
+- `custom_equipments`: `name`, `animationType`, `hasValve`, `note`, `isCustom` (+ legacy `brand`, `model`, `equipmentType`, `category`)
+- `custom_methods`: `equipmentId`, `name` (+ legacy `title`, `category`, `description`, `method`). Note: one row represents all methods for a single equipment — the `methods` array itself is not scalar, so most per-method data does not appear here.
 
 If payload shapes change, this summary layer may need updates too.
 

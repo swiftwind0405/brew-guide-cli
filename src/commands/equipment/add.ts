@@ -16,6 +16,10 @@ export default defineCommand({
   },
   args: {
     name: { type: 'string', required: true, description: 'Equipment name.' },
+    id: {
+      type: 'string',
+      description: 'Optional stable ID (slug). Defaults to custom-<slug>-<ts>. Used to cross-reference custom_methods rows.',
+    },
     'animation-type': {
       type: 'string',
       default: 'custom',
@@ -56,6 +60,7 @@ export default defineCommand({
         equipmentData.hasValve,
         equipmentData.note,
         config.brewGuideUserId,
+        typeof args.id === 'string' && args.id.trim() ? args.id.trim() : undefined,
       );
 
       if (args.format === 'json') {

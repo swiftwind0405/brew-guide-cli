@@ -16,9 +16,11 @@ export default defineCommand({
   },
   args: {
     id: { type: 'positional', required: true, description: 'Note record ID.' },
-    rating: { type: 'string', description: 'Rating (1-5).' },
+    rating: { type: 'string', description: 'Rating 0-5 (accepts decimals like 3.5).' },
     method: { type: 'string', description: 'Method name.' },
     memo: { type: 'string', description: 'Tasting notes.' },
+    notes: { type: 'string', description: 'Free-form notes (authoritative; alias of --memo).' },
+    equipment: { type: 'string', description: 'Equipment row id.' },
     'dry-run': { type: 'boolean', description: 'Preview the operation without executing.' },
     format: { type: 'string' },
   },
@@ -26,12 +28,21 @@ export default defineCommand({
     const logger = createCommandLogger(['note', 'update'], args as Record<string, unknown>);
 
     const updates: Record<string, unknown> = {};
-    if (typeof args.rating === 'string') updates.rating = Number.parseInt(args.rating, 10);
+    if (typeof args.rating === 'string') {
+      const r = Number.parseFloat(args.rating);
+      if (!Number.isFinite(r) || r < 0 || r > 5) {
+        console.error('Error: --rating must be a number between 0 and 5.');
+        process.exit(2);
+      }
+      updates.rating = r;
+    }
     if (typeof args.method === 'string') updates.method = args.method;
-    if (typeof args.memo === 'string') updates.notes = args.memo;
+    if (typeof args.equipment === 'string') updates.equipment = args.equipment;
+    if (typeof args.notes === 'string') updates.notes = args.notes;
+    else if (typeof args.memo === 'string') updates.notes = args.memo;
 
     if (Object.keys(updates).length === 0) {
-      console.error('No fields to update. Use --rating, --method, --memo, etc.');
+      console.error('No fields to update. Use --rating, --method, --memo, --notes, --equipment.');
       process.exit(2);
     }
 

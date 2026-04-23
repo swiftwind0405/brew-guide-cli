@@ -10,6 +10,26 @@ function buildNoteData(args: Record<string, string | boolean | undefined>) {
     method: args.method,
   };
 
+  // 真实字段（优先使用）
+  if (typeof args.equipment === 'string' && args.equipment) {
+    noteData.equipment = args.equipment;
+  }
+  if (typeof args.rating === 'string' && args.rating) {
+    const n = Number(args.rating);
+    if (Number.isFinite(n)) noteData.rating = n;
+  }
+  if (typeof args.source === 'string' && args.source) {
+    noteData.source = args.source;
+  }
+  if (typeof args.notes === 'string' && args.notes) {
+    noteData.notes = args.notes;
+  }
+  if (typeof args['total-time'] === 'string' && args['total-time']) {
+    const n = Number(args['total-time']);
+    if (Number.isFinite(n)) noteData.totalTime = n;
+  }
+
+  // 老字段（由 normalizeNote 转换到真实形状）
   if (typeof args['grind-size'] === 'string' && args['grind-size']) {
     noteData.grindSize = args['grind-size'];
   }
@@ -51,14 +71,20 @@ export default defineCommand({
   args: {
     'bean-id': { type: 'string', required: true },
     method: { type: 'string', required: true },
-    'grind-size': { type: 'string' },
-    'water-temp': { type: 'string' },
-    ratio: { type: 'string' },
-    'brew-time': { type: 'string' },
-    flavor: { type: 'string' },
-    score: { type: 'string' },
-    memo: { type: 'string' },
-    'brewed-at': { type: 'string' },
+    equipment: { type: 'string', description: 'Equipment row id (e.g. V60, Espresso).' },
+    rating: { type: 'string', description: 'Rating 0-5 (authoritative).' },
+    source: { type: 'string', description: 'Source tag (e.g. quick-decrement, capacity-adjustment).' },
+    notes: { type: 'string', description: 'Free-form notes (authoritative; prefer over --memo).' },
+    'total-time': { type: 'string', description: 'Total brew time in seconds (authoritative; prefer over --brew-time).' },
+    // legacy flat args — auto-normalized to real shape:
+    'grind-size': { type: 'string', description: '[legacy] → params.grindSize.' },
+    'water-temp': { type: 'string', description: '[legacy] → params.temp (°C).' },
+    ratio: { type: 'string', description: '[legacy] → params.ratio.' },
+    'brew-time': { type: 'string', description: '[legacy] mm:ss or seconds → totalTime.' },
+    flavor: { type: 'string', description: '[legacy] merged into notes.' },
+    score: { type: 'string', description: '[legacy] 0-100 → rating 0-5 (/20).' },
+    memo: { type: 'string', description: '[legacy] → notes.' },
+    'brewed-at': { type: 'string', description: '[legacy] ISO → timestamp.' },
     'dry-run': { type: 'boolean' },
     format: { type: 'string' },
   },
