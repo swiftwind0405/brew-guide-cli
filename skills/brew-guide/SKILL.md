@@ -53,7 +53,7 @@ brew-guide init
 | `note add` | 新增（见 `references/note-add.md`） | `brew-guide note add --bean-id "..." --method "..." [--equipment "V60"] [--rating 4] [--notes "..."] [--source tag] [--total-time 150] [--taste-body 4 --taste-acidity 4 --taste-sweetness 3 --taste-bitterness 2] [legacy flat flags] [--dry-run]` |
 | `note list` | 列出 | `brew-guide note list [--limit N] [--equipment V60] [--method 日式] [--bean-id "..."] [--min-rating 3.5] [--format json]` |
 | `note get` | 详情 | `brew-guide note get <id> [--format json]` |
-| `note update` | 更新 | `brew-guide note update <id> --rating 4 --notes "..." [--equipment "V60"] [--taste-body 4] [--dry-run]`（`--rating` / `--taste-*` 0–5，接受 `3.5` 这类小数；taste 部分更新会与现有值合并）|
+| `note update` | 更新 | `brew-guide note update <id> --rating 4 --notes "..." [--equipment "V60"] [--total-time 150] [--source tag] [--ratio "1:15"] [--grind-size "..."] [--water-temp 92] [--coffee "15g"] [--water "225g"] [--taste-body 4] [--dry-run]`（`--rating` / `--taste-*` 0–5；taste / params 部分更新与现有值合并）|
 | `note delete` | 软删除 | `brew-guide note delete <id> [--dry-run]` |
 
 ### equipment — 器具

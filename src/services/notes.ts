@@ -79,12 +79,17 @@ export async function updateNote(
     updates.taste && typeof updates.taste === 'object'
       ? { ...(row.data.taste as Record<string, unknown> | undefined ?? {}), ...(updates.taste as Record<string, unknown>) }
       : row.data.taste;
+  const mergedParams =
+    updates.params && typeof updates.params === 'object'
+      ? { ...(row.data.params as Record<string, unknown> | undefined ?? {}), ...(updates.params as Record<string, unknown>) }
+      : row.data.params;
   const merged: Record<string, unknown> = {
     ...row.data,
     ...updates,
     updatedAt: new Date().toISOString(),
   };
   if (mergedTaste !== undefined) merged.taste = mergedTaste;
+  if (mergedParams !== undefined) merged.params = mergedParams;
   await upsertRecord(supabase, TABLE, noteId, merged, userId);
   return { ...merged, id: noteId };
 }

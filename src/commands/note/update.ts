@@ -21,6 +21,13 @@ export default defineCommand({
     memo: { type: 'string', description: 'Tasting notes.' },
     notes: { type: 'string', description: 'Free-form notes (authoritative; alias of --memo).' },
     equipment: { type: 'string', description: 'Equipment row id.' },
+    'total-time': { type: 'string', description: 'Total brew time in seconds.' },
+    source: { type: 'string', description: 'Source tag.' },
+    ratio: { type: 'string', description: 'params.ratio.' },
+    'grind-size': { type: 'string', description: 'params.grindSize.' },
+    'water-temp': { type: 'string', description: 'params.temp °C.' },
+    coffee: { type: 'string', description: 'params.coffee.' },
+    water: { type: 'string', description: 'params.water.' },
     'taste-body': { type: 'string', description: 'Taste body 0-5.' },
     'taste-acidity': { type: 'string', description: 'Taste acidity 0-5.' },
     'taste-sweetness': { type: 'string', description: 'Taste sweetness 0-5.' },
@@ -44,6 +51,30 @@ export default defineCommand({
     if (typeof args.equipment === 'string') updates.equipment = args.equipment;
     if (typeof args.notes === 'string') updates.notes = args.notes;
     else if (typeof args.memo === 'string') updates.notes = args.memo;
+    if (typeof args['total-time'] === 'string' && args['total-time']) {
+      const n = Number.parseFloat(args['total-time']);
+      if (!Number.isFinite(n) || n < 0) {
+        console.error('Error: --total-time must be a non-negative number (seconds).');
+        process.exit(2);
+      }
+      updates.totalTime = n;
+    }
+    if (typeof args.source === 'string' && args.source) updates.source = args.source;
+
+    const paramsPatch: Record<string, unknown> = {};
+    if (typeof args.ratio === 'string' && args.ratio) paramsPatch.ratio = args.ratio;
+    if (typeof args['grind-size'] === 'string' && args['grind-size']) paramsPatch.grindSize = args['grind-size'];
+    if (typeof args['water-temp'] === 'string' && args['water-temp']) {
+      const n = Number.parseFloat(args['water-temp']);
+      if (!Number.isFinite(n)) {
+        console.error('Error: --water-temp must be a number.');
+        process.exit(2);
+      }
+      paramsPatch.temp = `${n}°C`;
+    }
+    if (typeof args.coffee === 'string' && args.coffee) paramsPatch.coffee = args.coffee;
+    if (typeof args.water === 'string' && args.water) paramsPatch.water = args.water;
+    if (Object.keys(paramsPatch).length > 0) updates.params = paramsPatch;
 
     const taste: Record<string, number> = {};
     for (const key of ['body', 'acidity', 'sweetness', 'bitterness'] as const) {
