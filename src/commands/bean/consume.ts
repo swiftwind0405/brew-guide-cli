@@ -3,6 +3,7 @@ import { createSupabaseClient } from '../../client.ts';
 import { resolveConfig } from '../../config.ts';
 import { createCommandLogger } from '../../logger.ts';
 import { consumeBean } from '../../services/beans.ts';
+import { executeUpsertNote } from '../../tools/upsertNote.ts';
 
 function exitWithError(message: string, code: number) {
   console.error(message);
@@ -17,6 +18,8 @@ export default defineCommand({
   args: {
     id: { type: 'positional', required: true, description: 'Bean record ID.' },
     amount: { type: 'string', required: true, description: 'Grams to deduct (e.g., 15).' },
+    'with-note': { type: 'boolean', description: 'Also create a quick-decrement brewing note.' },
+    source: { type: 'string', description: 'Source tag for the note (default: quick-decrement).' },
     'dry-run': { type: 'boolean', description: 'Preview the operation without executing.' },
     format: { type: 'string' },
   },
@@ -29,11 +32,16 @@ export default defineCommand({
       process.exit(2);
     }
 
+    const source = typeof args.source === 'string' && args.source ? args.source : 'quick-decrement';
+    const withNote = args['with-note'] === true;
+
     if (args['dry-run']) {
+      const preview: Record<string, unknown> = { dryRun: true, action: 'consume', id: args.id, amount };
+      if (withNote) preview.note = { beanId: args.id, source, coffee: `${amount}g` };
       if (args.format === 'json') {
-        console.log(JSON.stringify({ dryRun: true, action: 'consume', id: args.id, amount }));
+        console.log(JSON.stringify(preview));
       } else {
-        console.log(`[dry-run] Would consume ${amount}g from bean ${args.id.slice(0, 8)}`);
+        console.log(`[dry-run] Would consume ${amount}g from bean ${args.id.slice(0, 8)}${withNote ? ` and write ${source} note` : ''}`);
       }
       await logger.success();
       return;
@@ -50,10 +58,21 @@ export default defineCommand({
         process.exit(1);
       }
 
+      if (withNote) {
+        await executeUpsertNote(supabase, config, {
+          note: {
+            beanId: args.id,
+            source,
+            rating: 0,
+            params: { coffee: `${amount}g` },
+          },
+        });
+      }
+
       if (args.format === 'json') {
         console.log(JSON.stringify(result, null, 2));
       } else {
-        console.log(`Consumed ${amount}g from ${result.name ?? args.id} — remaining: ${result.remaining}`);
+        console.log(`Consumed ${amount}g from ${result.name ?? args.id} — remaining: ${result.remaining}${withNote ? ` (${source} note recorded)` : ''}`);
       }
 
       await logger.success();

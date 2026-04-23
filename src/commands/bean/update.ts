@@ -49,6 +49,10 @@ export default defineCommand({
     if (typeof args.variety === 'string' && args.variety) updates.variety = args.variety;
     if (typeof args.estate === 'string' && args.estate) updates.estate = args.estate;
     if (typeof args['roast-date'] === 'string' && args['roast-date']) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(args['roast-date'])) {
+        console.error('Error: --roast-date must be YYYY-MM-DD.');
+        process.exit(2);
+      }
       updates.roastDate = args['roast-date'];
       updates.isInTransit = false;
     }

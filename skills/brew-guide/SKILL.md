@@ -44,7 +44,7 @@ brew-guide init
 | `bean get` | 详情 | `brew-guide bean get <id> [--format json]` |
 | `bean update` | 更新 | `brew-guide bean update <id> --remaining "..." [--origin "..."] [--process "..."] [--variety "..."] [--estate "..."] [--roast-date "YYYY-MM-DD"] [--start-day 30] [--end-day 60] [--dry-run]`（origin/process/variety/estate 合并进 blendComponents[0]）|
 | `bean delete` | 软删除 | `brew-guide bean delete <id> [--dry-run]` |
-| `bean consume` | 扣减余量 | `brew-guide bean consume <id> --amount 15 [--dry-run]` |
+| `bean consume` | 扣减余量 | `brew-guide bean consume <id> --amount 15 [--with-note] [--source quick-decrement] [--dry-run]` |
 
 ### note — 冲煮记录
 

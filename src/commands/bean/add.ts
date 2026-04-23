@@ -37,6 +37,10 @@ function buildBeanData(args: Record<string, string | boolean | undefined>) {
     beanData.roastLevel = args['roast-level'];
   }
   if (typeof args['roast-date'] === 'string' && args['roast-date']) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(args['roast-date'])) {
+      console.error('Error: --roast-date must be YYYY-MM-DD.');
+      process.exit(2);
+    }
     beanData.roastDate = args['roast-date'];
     beanData.isInTransit = false;
   } else {
